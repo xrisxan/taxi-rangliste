@@ -194,52 +194,46 @@
     let pendingAction = null;
 
     // --- LIZENZ-CHECK LOGIK ---
-    async function verifyLicense() {
-        const status = document.getElementById('licenseStatus');
-        const idBox = document.getElementById('idDisplay');
-        
-        if (!navigator.onLine) {
-            status.innerHTML = "❌ Keine Internetverbindung!<br>Die App benötigt Internet zum Prüfen der Lizenz.";
-            return;
-        }
-
-        let pcID = localStorage.getItem('app_machine_id');
-        if (!pcID) {
-            pcID = "ID-" + Math.random().toString(36).substr(2, 9).toUpperCase();
-            localStorage.setItem('app_machine_id', pcID);
-        }
-        idBox.innerText = "Ihre Hardware-ID: " + pcID;
-        idBox.style.display = "block";
-
-        try {
-            const response = await fetch(DROPBOX_URL);
-            const text = await response.text();
-            const today = new Date();
-            let authorized = false;
-
-            const rows = text.split('\n');
-            for (let row of rows) {
-                const parts = row.split('|');
-                if (parts.length >= 2) {
-                    const id = parts[0].trim();
-                    const expiry = parts[1].trim();
-                    if (id === pcID) {
-                        const expDate = new Date(expiry);
-                        if (expDate >= today) { authorized = true; }
-                        break;
-                    }
-                }
-            }
-
-            if (authorized) {
-                document.getElementById('licenseOverlay').style.display = 'none';
-            } else {
-                status.innerHTML = "❌ Zugriff verweigert!<br>Hardware-ID nicht registriert oder Lizenz abgelaufen.";
-            }
-        } catch (e) {
-            status.innerHTML = "⚠️ Fehler beim Erreichen des Lizenz-Servers.<br>Bitte prüfen Sie den Dropbox-Link.";
-        }
-    }
+	async function verifyLicense() {
+	    const statusText = document.getElementById('licenseStatus');
+	    const idDisplay = document.getElementById('idDisplay');
+	    const hardwareId = getHardwareId().trim(); // Trimmt die Hardware-ID
+	    idDisplay.textContent = hardwareId;
+	
+	    try {
+	        const response = await fetch(GITHUB_URL + "?nocache=" + Date.now());
+	        if (!response.ok) throw new Error("Server-Fehler");
+	        
+	        const text = await response.text();
+	        const lines = text.split('\n');
+	        let accessGranted = false;
+	
+	        for (let line of lines) {
+	            if (!line.includes('|')) continue; // Überspringt leere Zeilen
+	            
+	            // Trimmt ID und Datum, um Leerzeichen-Fehler zu vermeiden
+	            const [id, date] = line.split('|').map(s => s.trim()); 
+	            
+	            if (id === hardwareId) {
+	                const parts = date.split('-');
+	                const exp = new Date(parts[0], parts[1] - 1, parts[2]);
+	                if (exp > new Date()) {
+	                    accessGranted = true;
+	                    break;
+	                }
+	            }
+	        }
+	
+	        if (accessGranted) {
+	            document.getElementById('licenseOverlay').style.display = 'none';
+	        } else {
+	            statusText.textContent = "ID nicht registriert oder Lizenz abgelaufen.";
+	            statusText.style.color = "#e74c3c";
+	        }
+	    } catch (error) {
+	        statusText.textContent = "Keine Internetverbindung zum Lizenzserver!";
+	    }
+	}
 
     // --- CORE DATEN LOGIK ---
     let fahrzeuge = JSON.parse(localStorage.getItem('wg_data') || '[]');
@@ -393,4 +387,5 @@
     renderAll();
 </script>
 </body>
+
 </html>
