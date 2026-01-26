@@ -196,42 +196,29 @@
     // --- LIZENZ-CHECK LOGIK ---
 	async function verifyLicense() {
 	    const statusText = document.getElementById('licenseStatus');
-	    const idDisplay = document.getElementById('idDisplay');
-	    const hardwareId = getHardwareId().trim(); // Trimmt die Hardware-ID
-	    idDisplay.textContent = hardwareId;
+	    const hardwareId = "ID-PK80TVXA4"; 
+	
+	    // Sicherheits-Timer: Wenn nach 8 Sekunden nichts passiert, Fehlermeldung zeigen
+	    const controller = new AbortController();
+	    const timeoutId = setTimeout(() => controller.abort(), 8000);
 	
 	    try {
-	        const response = await fetch(GITHUB_URL + "?nocache=" + Date.now());
-	        if (!response.ok) throw new Error("Server-Fehler");
+	        // Wir fügen einen Zeitstempel hinzu, um den Cache zu umgehen
+	        const response = await fetch(GITHUB_URL + "?nocache=" + Date.now(), {
+	            signal: controller.signal
+	        });
 	        
+	        clearTimeout(timeoutId); // Timer stoppen, da Antwort kam
+	
 	        const text = await response.text();
-	        const lines = text.split('\n');
-	        let accessGranted = false;
-	
-	        for (let line of lines) {
-	            if (!line.includes('|')) continue; // Überspringt leere Zeilen
-	            
-	            // Trimmt ID und Datum, um Leerzeichen-Fehler zu vermeiden
-	            const [id, date] = line.split('|').map(s => s.trim()); 
-	            
-	            if (id === hardwareId) {
-	                const parts = date.split('-');
-	                const exp = new Date(parts[0], parts[1] - 1, parts[2]);
-	                if (exp > new Date()) {
-	                    accessGranted = true;
-	                    break;
-	                }
-	            }
-	        }
-	
-	        if (accessGranted) {
+	        if (text.includes(hardwareId)) {
 	            document.getElementById('licenseOverlay').style.display = 'none';
 	        } else {
-	            statusText.textContent = "ID nicht registriert oder Lizenz abgelaufen.";
-	            statusText.style.color = "#e74c3c";
+	            statusText.innerHTML = "<span style='color:red'>Zugriff verweigert!</span><br>ID nicht in rangliste.txt gefunden.";
 	        }
 	    } catch (error) {
-	        statusText.textContent = "Keine Internetverbindung zum Lizenzserver!";
+	        statusText.innerHTML = "Verbindungsfehler oder Zeitüberschreitung.<br>Bitte Internetverbindung prüfen.";
+	        console.error("Lizenz-Fehler:", error);
 	    }
 	}
 
@@ -389,4 +376,5 @@
 </body>
 
 </html>
+
 
