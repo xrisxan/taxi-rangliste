@@ -186,6 +186,32 @@
 </div>
 
 <script>
+    /* ================================
+       🔒 ROBUSTER LOCALSTORAGE LAYER
+       ================================ */
+    
+    function safeLoad(key, fallback) {
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw) return structuredClone(fallback);
+    
+            const parsed = JSON.parse(raw);
+            return Array.isArray(fallback)
+                ? (Array.isArray(parsed) ? parsed : structuredClone(fallback))
+                : (typeof parsed === 'object' && parsed !== null ? parsed : structuredClone(fallback));
+        } catch {
+            return structuredClone(fallback);
+        }
+    }
+    
+    function safeSave(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+        } catch {
+            alert("⚠️ Speicher voll oder blockiert!\nDaten konnten nicht gespeichert werden.");
+        }
+    }
+    
     /* =========================
        INIT – einmalige Sicherung
        ========================= */
@@ -438,6 +464,7 @@
 </script>
 </body>
 </html>
+
 
 
 
