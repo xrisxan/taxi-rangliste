@@ -315,16 +315,53 @@
 
     function renderFahrten() {
         const tbody = document.querySelector('#fahrtenTable tbody');
-        // Kopie erstellen und umdrehen, damit das Original-Array für die IDs stabil bleibt
-        const displayList = [...fahrten].reverse();
-        
+        if (!tbody) return;
+    
+        // Sicherheitskopie – Anzeige neueste zuerst
+        const displayList = Array.isArray(fahrten)
+            ? [...fahrten].reverse()
+            : [];
+    
         tbody.innerHTML = displayList.map((f, i) => {
-            let rowClass = f.type === "storno" ? "row-storno" : (f.isStorniert ? "row-is-storniert" : "");
-            let aktion = f.type === "storno" ? "Beleg" : (f.isStorniert ? "Storniert" : `<button class="btn-storno" onclick="convertToStorno(${i})">Storno</button>`);
-            return `<tr class="${rowClass}" oncontextmenu="handleAdminContext(event, ${i})">
-                <td><b>${f.w}</b></td><td>${f.u}</td><td>${f.z}</td><td>${f.b.toFixed(2)} €</td>
-                <td style="color:#888">${f.t}</td><td style="color:#e74c3c; font-weight:bold;">${f.stornoDatum || '-'}</td><td>${aktion}</td>
-            </tr>`;
+            // 🔒 Defensive Defaults
+            const wagen = f?.w ?? '—';
+            const unternehmer = f?.u ?? '—';
+            const ziel = f?.z ?? '—';
+            const betrag = (typeof f?.b === 'number' && Number.isFinite(f.b))
+                ? f.b.toFixed(2) + ' €'
+                : '0.00 €';
+            const zeit = f?.t ?? '—';
+            const stornoDatum = f?.stornoDatum || '—';
+    
+            const isStorno = f?.type === 'storno';
+            const isStorniert = f?.isStorniert === true;
+    
+            // CSS-Klasse
+            let rowClass = '';
+            if (isStorno) rowClass = 'row-storno';
+            else if (isStorniert) rowClass = 'row-is-storniert';
+    
+            // Aktion
+            let aktion = '—';
+            if (isStorno) {
+                aktion = 'Beleg';
+            } else if (isStorniert) {
+                aktion = 'Storniert';
+            } else {
+                aktion = `<button class="btn-storno" onclick="convertToStorno(${i})">Storno</button>`;
+            }
+    
+            return `
+                <tr class="${rowClass}" oncontextmenu="handleAdminContext(event, ${i})">
+                    <td><b>${wagen}</b></td>
+                    <td>${unternehmer}</td>
+                    <td>${ziel}</td>
+                    <td>${betrag}</td>
+                    <td style="color:#888">${zeit}</td>
+                    <td style="color:#e74c3c; font-weight:bold;">${stornoDatum}</td>
+                    <td>${aktion}</td>
+                </tr>
+            `;
         }).join('');
     }
 
@@ -401,6 +438,7 @@
 </script>
 </body>
 </html>
+
 
 
 
