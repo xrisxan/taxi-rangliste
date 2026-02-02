@@ -332,6 +332,22 @@
     
     updateZielDatalist();
     renderAll();
+
+    function lockApp() {
+    if (window.chrome?.webview)
+        window.chrome.webview.postMessage("LOCK_APP");
+    }
+    
+    function unlockApp() {
+        if (window.chrome?.webview)
+            window.chrome.webview.postMessage("UNLOCK_APP");
+    }
+    
+    function exitApp() {
+        if (window.chrome?.webview)
+            window.chrome.webview.postMessage("EXIT_APP");
+    }
 </script>
 </body>
 </html>
+
