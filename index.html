@@ -186,6 +186,22 @@
 </div>
 
 <script>
+    /* =========================
+       INIT – einmalige Sicherung
+       ========================= */
+    
+    if (!localStorage.getItem('wg_data')) {
+        localStorage.setItem('wg_data', JSON.stringify([]));
+    }
+    
+    if (!localStorage.getItem('ziele_data')) {
+        localStorage.setItem('ziele_data', JSON.stringify([]));
+    }
+    
+    if (!localStorage.getItem('fahrten_data')) {
+        localStorage.setItem('fahrten_data', JSON.stringify([]));
+    }
+    
     // Passwort ist "1234" (als Base64 verschleiert)
     const H_PW = "MTIzNA=="; 
     let isDev = false;
@@ -350,4 +366,5 @@
 </script>
 </body>
 </html>
+
 
