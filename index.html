@@ -2,130 +2,34 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Html Rangliste Weite Fahrten - Version 1.4 (Newest Top)</title>
+    <title>Html Rangliste Weite Fahrten - Version 1.4 (Cloud Optimized)</title>
     <style>
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            margin: 0; 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-            background-color: #f0f2f5; 
-        }
-
-        /* KOPFBAR */
-        header {
-            height: 120px;
-            background: #ffffff;
-            border-bottom: 2px solid #3498db;
-            display: flex;
-            flex-direction: column;
-            padding: 10px 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            z-index: 100;
-        }
-
+        /* Deine Styles bleiben identisch */
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background-color: #f0f2f5; }
+        header { height: 120px; background: #ffffff; border-bottom: 2px solid #3498db; display: flex; flex-direction: column; padding: 10px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 100; }
         header h2 { margin: 0 0 5px 0; font-size: 1.1em; color: #2c3e50; }
-        
-        .rangliste-bar {
-            display: flex;
-            gap: 15px;
-            overflow-x: auto;
-            padding-bottom: 5px;
-        }
-
-        .rangliste-item {
-            background: #ecf0f1;
-            padding: 8px 15px;
-            border-radius: 6px;
-            min-width: 180px;
-            border-left: 4px solid #3498db;
-            flex-shrink: 0;
-        }
-
+        .rangliste-bar { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 5px; }
+        .rangliste-item { background: #ecf0f1; padding: 8px 15px; border-radius: 6px; min-width: 180px; border-left: 4px solid #3498db; flex-shrink: 0; }
         .rangliste-item.low { border-left-color: #e74c3c; background: #fee; }
-
-        /* HAUPTBEREICH */
-        .main-wrapper {
-            display: flex;
-            flex-grow: 1;
-            overflow: hidden;
-        }
-
-        .sidebar {
-            width: 300px;
-            background-color: #2c3e50;
-            color: white;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
-        }
-
+        .main-wrapper { display: flex; flex-grow: 1; overflow: hidden; }
+        .sidebar { width: 300px; background-color: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; box-shadow: 2px 0 10px rgba(0,0,0,0.2); }
         .sidebar h3 { margin-top: 0; border-bottom: 1px solid #555; padding-bottom: 10px; }
-        
         .input-group { margin-bottom: 15px; }
         .input-group label { display: block; margin-bottom: 5px; font-size: 0.85em; color: #bdc3c7; }
-        
-        .sidebar input { 
-            width: 100%; padding: 10px; border: none; border-radius: 4px; 
-            background: #34495e; color: white; font-size: 1em; box-sizing: border-box;
-        }
-
-        .btn-save { 
-            background-color: #3498db; color: white; border: none; padding: 12px; 
-            border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px;
-        }
-
+        .sidebar input { width: 100%; padding: 10px; border: none; border-radius: 4px; background: #34495e; color: white; font-size: 1em; box-sizing: border-box; }
+        .btn-save { background-color: #3498db; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
         .nav-links { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
-        .nav-links a { color: #bdc3c7; text-decoration: none; font-size: 0.9em; }
-
-        /* TABELLE */
-        .content-area {
-            flex-grow: 1;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .table-container {
-            background: white;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            flex-grow: 1;
-            overflow-y: auto;
-        }
-
+        .nav-links a { color: #bdc3c7; text-decoration: none; font-size: 0.9em; cursor: pointer; }
+        .content-area { flex-grow: 1; padding: 20px; display: flex; flex-direction: column; overflow: hidden; }
+        .table-container { background: white; border-radius: 8px; border: 1px solid #ddd; flex-grow: 1; overflow-y: auto; }
         table { width: 100%; border-collapse: collapse; }
         th { position: sticky; top: 0; background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #ddd; z-index: 10; }
         td { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9em; }
-
         .row-storno { background-color: #ffcccc !important; color: #a00; }
         .row-is-storniert { color: #999; text-decoration: line-through; opacity: 0.6; }
-
         .btn-storno { color: #e74c3c; cursor: pointer; border: 1px solid #e74c3c; background: white; padding: 2px 5px; border-radius: 3px; }
-
-        /* DEV LOGIN MODAL */
-        #devModal {
-            display: none;
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            z-index: 1000;
-            color: #333;
-        }
-        #modalOverlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
-            z-index: 999;
-        }
+        #devModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5); z-index: 1000; color: #333; }
+        #modalOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 999; }
     </style>
 </head>
 <body>
@@ -165,9 +69,9 @@
         </form>
 
         <div class="nav-links">
-            <a href="wg.html">⚙️ Fahrzeuge</a>
-            <a href="ziele.html">📍 Ziele</a>
-            <a href="#" onclick="requestDevAccess('clear')" style="color:#e74c3c; margin-top:10px;">🗑️ Alles löschen (Sperre)</a>
+            <a onclick="navigate('wg.html')">⚙️ Fahrzeuge</a>
+            <a onclick="navigate('ziele.html')">📍 Ziele</a>
+            <a onclick="requestDevAccess('clear')" style="color:#e74c3c; margin-top:10px;">🗑️ Alles löschen (Sperre)</a>
         </div>
     </div>
 
@@ -187,285 +91,153 @@
 
 <script>
     /* ================================
-       🔒 ROBUSTER LOCALSTORAGE LAYER
+       🚀 CLOUD COMMUNICATION LAYER
        ================================ */
     
-    function safeLoad(key, fallback) {
-        try {
-            const raw = localStorage.getItem(key);
-            if (!raw) return structuredClone(fallback);
-    
-            const parsed = JSON.parse(raw);
-            return Array.isArray(fallback)
-                ? (Array.isArray(parsed) ? parsed : structuredClone(fallback))
-                : (typeof parsed === 'object' && parsed !== null ? parsed : structuredClone(fallback));
-        } catch {
-            return structuredClone(fallback);
+    let fahrzeuge = [];
+    let ziele = [];
+    let fahrten = [];
+
+    // Kommunikation mit C# WebView2
+    function sendToCSharp(intent, type, data = null, target = null) {
+        if (window.chrome && window.chrome.webview) {
+            window.chrome.webview.postMessage({
+                intent: intent,
+                type: type,
+                data: data,
+                target: target
+            });
         }
     }
-    
-    function safeSave(key, value) {
-        try {
-            localStorage.setItem(key, JSON.stringify(value));
-        } catch {
-            alert("⚠️ Speicher voll oder blockiert!\nDaten konnten nicht gespeichert werden.");
-        }
+
+    // Empfange Daten von C# (Initialisierung)
+    if (window.chrome && window.chrome.webview) {
+        window.chrome.webview.addEventListener('message', event => {
+            const msg = event.data;
+            if (msg.type === "INIT_DATA") {
+                fahrzeuge = msg.fahrzeuge || [];
+                ziele = msg.ziele || [];
+                fahrten = msg.fahrten || [];
+                renderAll();
+                updateZielDatalist();
+            }
+        });
     }
-    
+
+    function navigate(page) {
+        sendToCSharp("NAVIGATE", null, null, page);
+    }
+
     /* =========================
-       INIT – einmalige Sicherung
+       LOGIK & RENDERING
        ========================= */
     
-    if (!localStorage.getItem('wg_data')) {
-        localStorage.setItem('wg_data', JSON.stringify([]));
-    }
-    
-    if (!localStorage.getItem('ziele_data')) {
-        localStorage.setItem('ziele_data', JSON.stringify([]));
-    }
-    
-    if (!localStorage.getItem('fahrten_data')) {
-        localStorage.setItem('fahrten_data', JSON.stringify([]));
-    }
-    
-    // Passwort ist "1234" (als Base64 verschleiert)
     const H_PW = "MTIzNA=="; 
     let isDev = false;
     let pendingAction = null; 
 
-    const wNrInput = document.getElementById('wNr');
-    const zielInput = document.getElementById('zielInput');
-    const betragInput = document.getElementById('betrag');
+    function renderAll() {
+        renderFahrten();
+        renderRangliste();
+    }
 
-    let fahrzeuge = JSON.parse(localStorage.getItem('wg_data') || '[]');
-    let ziele = JSON.parse(localStorage.getItem('ziele_data') || '[]');
-    let fahrten = JSON.parse(localStorage.getItem('fahrten_data') || '[]');
+    function renderFahrten() {
+        const tbody = document.querySelector('#fahrtenTable tbody');
+        if (!tbody) return;
+        const displayList = [...fahrten].reverse();
 
-    function requestDevAccess(actionType, index = null) {
-        if (isDev) { executeAction(actionType, index); return; }
-        pendingAction = { type: actionType, index: index };
+        tbody.innerHTML = displayList.map((f, i) => {
+            let rowClass = f.type === 'storno' ? 'row-storno' : (f.isStorniert ? 'row-is-storniert' : '');
+            let aktion = f.type === 'storno' ? 'Beleg' : (f.isStorniert ? 'Storniert' : `<button class="btn-storno" onclick="convertToStorno(${i})">Storno</button>`);
+            
+            return `
+                <tr class="${rowClass}">
+                    <td><b>${f.w}</b></td>
+                    <td>${f.u}</td>
+                    <td>${f.z}</td>
+                    <td>${f.b.toFixed(2)} €</td>
+                    <td style="color:#888">${f.t}</td>
+                    <td style="color:#e74c3c; font-weight:bold;">${f.stornoDatum || '—'}</td>
+                    <td>${aktion}</td>
+                </tr>`;
+        }).join('');
+    }
+
+    function renderRangliste() {
+        const bar = document.getElementById('ranglisteBar');
+        const stats = {};
+        const counts = {};
+        fahrzeuge.forEach(f => counts[f.u] = (counts[f.u] || 0) + 1);
+        fahrten.forEach(f => stats[f.u] = (stats[f.u] || 0) + f.b);
+
+        const rangData = Object.keys(counts).map(u => ({
+            u, schnitt: (stats[u] || 0) / counts[u], wagen: counts[u]
+        })).sort((a, b) => a.schnitt - b.schnitt);
+
+        bar.innerHTML = rangData.map((r, index) => `
+            <div class="rangliste-item ${index === 0 && r.schnitt !== 0 ? 'low' : ''}">
+                <b>${r.u}</b>
+                <span>Ø ${r.schnitt.toFixed(2)} € (${r.wagen} Wagen)</span>
+            </div>`).join('');
+    }
+
+    document.getElementById('fahrtForm').onsubmit = (e) => {
+        e.preventDefault();
+        const w = document.getElementById('wNr').value;
+        const z = document.getElementById('zielInput').value;
+        const b = parseFloat(document.getElementById('betrag').value);
+        const mapping = fahrzeuge.find(f => f.w === w);
+
+        if(!mapping) { alert("Wagen unbekannt!"); return; }
+
+        const neueFahrt = {
+            id: Date.now(), w, u: mapping.u, z, b,
+            t: new Date().toLocaleString('de-DE'),
+            stornoDatum: "", type: "normal", isStorniert: false
+        };
+
+        fahrten.push(neueFahrt);
+        renderAll();
+        
+        // DATEN AN C# SENDEN (Cloud-Speicherung)
+        sendToCSharp("SAVE_DATA", "fahrten", neueFahrt);
+        
+        e.target.reset();
+        document.getElementById('wNr').focus();
+    };
+
+    function updateZielDatalist() {
+        document.getElementById('zielOptionen').innerHTML = ziele.map(z => `<option value="${z.z}">`).join('');
+    }
+
+    // Dev-Funktionen (Passwort-Schutz bleibt)
+    function requestDevAccess(actionType) {
+        if (isDev) { executeClear(); return; }
+        pendingAction = actionType;
         document.getElementById('modalOverlay').style.display = 'block';
         document.getElementById('devModal').style.display = 'block';
-        document.getElementById('devPwInput').focus();
     }
 
     function confirmDevLogin() {
         if (btoa(document.getElementById('devPwInput').value) === H_PW) {
             isDev = true;
             closeDevModal();
-            executeAction(pendingAction.type, pendingAction.index);
-        } else {
-            alert("Zugriff verweigert!");
+            if (pendingAction === 'clear') executeClear();
+        } else { alert("Falsch!"); }
+    }
+
+    function executeClear() {
+        if (confirm("Wirklich alles löschen?")) {
+            fahrten = [];
+            renderAll();
+            sendToCSharp("CLEAR_DATA", "fahrten");
         }
-        document.getElementById('devPwInput').value = "";
     }
 
     function closeDevModal() {
         document.getElementById('modalOverlay').style.display = 'none';
         document.getElementById('devModal').style.display = 'none';
     }
-
-    function executeAction(type, index) {
-        // Da die Liste zum Rendern umgedreht wird, müssen wir den Index korrigieren
-        // Aber einfacher: Wir löschen über die eindeutige ID
-        if (type === 'delete') {
-            if (confirm("Diesen Eintrag permanent löschen?")) {
-                const realIndex = fahrten.length - 1 - index; // Korrektur wegen reverse()
-                fahrten.splice(realIndex, 1);
-                saveAndRefresh();
-            }
-        } else if (type === 'clear') {
-            if (confirm("ALLE DATEN LÖSCHEN?")) { fahrten = []; saveAndRefresh(); }
-        }
-    }
-
-    window.handleAdminContext = (e, index) => {
-        e.preventDefault();
-        requestDevAccess('delete', index);
-    };
-
-    function updateZielDatalist() {
-        const datalist = document.getElementById('zielOptionen');
-        datalist.innerHTML = ziele.map(z => `<option value="${z.z}">`).join('');
-    }
-
-    zielInput.addEventListener('input', () => {
-        const ziel = ziele.find(z => z.z === zielInput.value);
-        if (ziel) betragInput.value = ziel.p;
-    });
-
-    wNrInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); zielInput.focus(); } });
-    zielInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); betragInput.focus(); } });
-
-    document.getElementById('fahrtForm').onsubmit = (e) => {
-        e.preventDefault();
-        const w = wNrInput.value.trim();
-        const z = zielInput.value.trim();
-        const b = parseFloat(betragInput.value);
-        const mapping = fahrzeuge.find(f => f.w === w);
-
-        if(!mapping) { alert("Wagen " + w + " unbekannt!"); return; }
-
-        if (z !== "" && !ziele.some(item => item.z.toLowerCase() === z.toLowerCase())) {
-            if (confirm(`Ziel "${z}" neu speichern?`)) {
-                ziele.push({ z, p: b });
-                localStorage.setItem('ziele_data', JSON.stringify(ziele));
-                updateZielDatalist();
-            }
-        }
-
-        fahrten.push({
-            id: Date.now(), w, u: mapping.u, z, b,
-            t: new Date().toLocaleString('de-DE'),
-            stornoDatum: "", type: "normal", isStorniert: false
-        });
-
-        saveAndRefresh();
-        wNrInput.value = ''; zielInput.value = ''; betragInput.value = '';
-        wNrInput.focus();
-    };
-
-    window.convertToStorno = (index) => {
-        const realIndex = fahrten.length - 1 - index;
-        const f = fahrten[realIndex];
-        if (f.isStorniert || f.type === "storno") return;
-        if (confirm(`Stornieren?`)) {
-            f.isStorniert = true;
-            fahrten.push({
-                id: Date.now(), w: f.w, u: f.u, z: "STORNO: " + f.z, b: -f.b,
-                t: f.t, stornoDatum: new Date().toLocaleString('de-DE'), type: "storno"
-            });
-            saveAndRefresh();
-        }
-    };
-
-    function renderFahrten() {
-        const tbody = document.querySelector('#fahrtenTable tbody');
-        if (!tbody) return;
-    
-        // Sicherheitskopie – Anzeige neueste zuerst
-        const displayList = Array.isArray(fahrten)
-            ? [...fahrten].reverse()
-            : [];
-    
-        tbody.innerHTML = displayList.map((f, i) => {
-            // 🔒 Defensive Defaults
-            const wagen = f?.w ?? '—';
-            const unternehmer = f?.u ?? '—';
-            const ziel = f?.z ?? '—';
-            const betrag = (typeof f?.b === 'number' && Number.isFinite(f.b))
-                ? f.b.toFixed(2) + ' €'
-                : '0.00 €';
-            const zeit = f?.t ?? '—';
-            const stornoDatum = f?.stornoDatum || '—';
-    
-            const isStorno = f?.type === 'storno';
-            const isStorniert = f?.isStorniert === true;
-    
-            // CSS-Klasse
-            let rowClass = '';
-            if (isStorno) rowClass = 'row-storno';
-            else if (isStorniert) rowClass = 'row-is-storniert';
-    
-            // Aktion
-            let aktion = '—';
-            if (isStorno) {
-                aktion = 'Beleg';
-            } else if (isStorniert) {
-                aktion = 'Storniert';
-            } else {
-                aktion = `<button class="btn-storno" onclick="convertToStorno(${i})">Storno</button>`;
-            }
-    
-            return `
-                <tr class="${rowClass}" oncontextmenu="handleAdminContext(event, ${i})">
-                    <td><b>${wagen}</b></td>
-                    <td>${unternehmer}</td>
-                    <td>${ziel}</td>
-                    <td>${betrag}</td>
-                    <td style="color:#888">${zeit}</td>
-                    <td style="color:#e74c3c; font-weight:bold;">${stornoDatum}</td>
-                    <td>${aktion}</td>
-                </tr>
-            `;
-        }).join('');
-    }
-
-    function renderRangliste() {
-        const bar = document.getElementById('ranglisteBar');
-        if (!bar) return;
-    
-        // Sicherheitskopien
-        const stats = {};
-        const counts = {};
-    
-        // 1️⃣ Wagen pro Unternehmer zählen
-        fahrzeuge.forEach(f => {
-            if (!f.u) return;
-            counts[f.u] = (counts[f.u] || 0) + 1;
-        });
-    
-        // 2️⃣ Einnahmen pro Unternehmer aufsummieren (inkl. Storno)
-        fahrten.forEach(f => {
-            if (!f.u || typeof f.b !== "number") return;
-            stats[f.u] = (stats[f.u] || 0) + f.b;
-        });
-    
-        // 3️⃣ Rangliste aufbauen
-        const rangData = Object.keys(counts)
-            .filter(u => counts[u] > 0) // ❗ Unternehmer ohne Wagen raus
-            .map(u => {
-                const summe = stats[u] || 0;
-                const wagen = counts[u];
-                const schnitt = summe / wagen;
-    
-                return {
-                    u,
-                    schnitt,
-                    wagen
-                };
-            })
-            .filter(r => Number.isFinite(r.schnitt)) // ❗ Schutz vor NaN/Infinity
-            .sort((a, b) => a.schnitt - b.schnitt); // ❗ schlechtester zuerst
-    
-        // 4️⃣ Rendern
-        bar.innerHTML = rangData.map((r, index) => `
-            <div class="rangliste-item ${index === 0 && r.schnitt !== 0 ? 'low' : ''}">
-                <b>${r.u}</b>
-                <span>Ø ${r.schnitt.toFixed(2)} € (${r.wagen} Wagen)</span>
-            </div>
-        `).join('');
-    }
-
-    function saveAndRefresh() {
-        localStorage.setItem('fahrten_data', JSON.stringify(fahrten));
-        renderAll();
-    }
-
-    function renderAll() { renderFahrten(); renderRangliste(); }
-    
-    updateZielDatalist();
-    renderAll();
-
-    function lockApp() {
-    if (window.chrome?.webview)
-        window.chrome.webview.postMessage("LOCK_APP");
-    }
-    
-    function unlockApp() {
-        if (window.chrome?.webview)
-            window.chrome.webview.postMessage("UNLOCK_APP");
-    }
-    
-    function exitApp() {
-        if (window.chrome?.webview)
-            window.chrome.webview.postMessage("EXIT_APP");
-    }
 </script>
 </body>
 </html>
-
-
-
-
-
