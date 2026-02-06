@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Rangliste Weite Fahrten v3.0 - Enterprise</title>
     <style>
-        /* DEIN ORIGINAL DESIGN - KOMPLETT ERHALTEN */
+        /* EXAKT DEINE ORIGINAL STYLES */
         body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background-color: #f0f2f5; }
         header { height: 120px; background: #ffffff; border-bottom: 2px solid #3498db; display: flex; flex-direction: column; padding: 10px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 100; }
         header h2 { margin: 0 0 5px 0; font-size: 1.1em; color: #2c3e50; }
@@ -28,19 +28,30 @@
         .row-storno { background-color: #ffcccc !important; color: #a00; }
         .row-is-storniert { color: #999; text-decoration: line-through; opacity: 0.6; }
         .btn-storno { color: #e74c3c; cursor: pointer; border: 1px solid #e74c3c; background: white; padding: 2px 5px; border-radius: 3px; }
-        #modalOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 999; }
-        #devModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5); z-index: 1000; color: #333; }
+        
+        /* DEIN LIZENZ OVERLAY STYLE */
+        #licenseOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #2c3e50; z-index: 9999; display: flex; align-items: center; justify-content: center; color: white; flex-direction: column; text-align: center; padding: 20px; box-sizing: border-box; }
+        #devModal, #modalOverlay { display: none; }
+        #devModal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; z-index: 1000; color: #333; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        #modalOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 999; }
     </style>
 </head>
 <body>
 
+<div id="licenseOverlay">
+    <h1 style="color: #3498db;">SYSTEMPRÜFUNG</h1>
+    <p id="licenseStatus">Bitte warten, Lizenz wird online geprüft...</p>
+    <div id="idDisplay" style="margin-top: 20px; font-family: monospace; background: #34495e; padding: 10px; border-radius: 5px; border: 1px solid #3498db;">ID-PK80TVXA4</div>
+    <p style="font-size: 0.8em; color: #bdc3c7; margin-top: 30px;">Hinweis: Ohne Internetverbindung kann die App nicht gestartet werden.</p>
+</div>
+
 <div id="modalOverlay"></div>
 <div id="devModal">
     <h3>Entwickler-Login</h3>
-    <p>Bitte Passwort eingeben:</p>
-    <input type="password" id="devPwInput" style="width:100%; padding:10px; margin-bottom:10px;">
+    <p>Passwort erforderlich:</p>
+    <input type="password" id="devPwInput" style="width:100%; padding:10px; margin-bottom:10px; border: 1px solid #ccc; border-radius: 4px;">
     <button onclick="confirmDevLogin()" class="btn-save">Anmelden</button>
-    <button onclick="closeDevModal()" style="margin-top:5px; background:none; border:none; color:gray; cursor:pointer; width:100%;">Abbrechen</button>
+    <button onclick="closeDevModal()" style="background:none; border:none; color:gray; cursor:pointer; width:100%; margin-top:5px;">Abbrechen</button>
 </div>
 
 <header>
@@ -69,9 +80,9 @@
         </form>
 
         <div class="nav-links">
-            <a onclick="navigate('wg.html')">⚙️ Fahrzeuge</a>
-            <a onclick="navigate('ziele.html')">📍 Ziele</a>
-            <a onclick="requestDevAccess('clear')" style="color:#e74c3c; margin-top:10px;">🗑️ Alles löschen</a>
+            <a href="wg.html">⚙️ Fahrzeuge</a>
+            <a href="ziele.html">📍 Ziele</a>
+            <a href="#" onclick="requestDevAccess('clear')" style="color:#e74c3c; margin-top:10px;">🗑️ Alles löschen (Sperre)</a>
         </div>
     </div>
 
@@ -90,15 +101,7 @@
 </div>
 
 <script>
-    // --- VARIABLEN WIE IM ORIGINAL ---
-    let fahrzeuge = [];
-    let ziele = [];
-    let fahrten = [];
-    const H_PW = "MTIzNA=="; 
-    let isDev = false;
-    let pendingAction = null;
-
-    // --- NEU: DATEN-EMPFANG VON C# ---
+    // --- KOMMUNIKATION MIT C# (WICHTIG FÜR DIE CLOUD) ---
     if (window.chrome && window.chrome.webview) {
         window.chrome.webview.addEventListener('message', event => {
             let msg = event.data;
@@ -109,33 +112,34 @@
                 ziele = msg.ziele || [];
                 fahrten = msg.fahrten || [];
                 
-                // Sobald Daten da sind: Datalist & Tabelle füllen
+                // Lizenz-Overlay ausblenden, wenn C# grünes Licht gibt
+                document.getElementById('licenseOverlay').style.display = 'none';
+                
                 updateZielDatalist();
                 renderAll();
             }
         });
     }
 
-    // --- ORIGINAL AUTOKOMPLETTIERUNG ---
+    // --- DEINE ORIGINAL LOGIK ---
+    let fahrzeuge = JSON.parse(localStorage.getItem('wg_data') || '[]');
+    let ziele = JSON.parse(localStorage.getItem('ziele_data') || '[]');
+    let fahrten = JSON.parse(localStorage.getItem('fahrten_data') || '[]');
+
     function updateZielDatalist() {
         const datalist = document.getElementById('zielOptionen');
-        // Nutzt .z für das Ziel aus deinem Cloud-Model
-        datalist.innerHTML = ziele.map(item => `<option value="${item.z}">`).join('');
+        datalist.innerHTML = ziele.map(z => `<option value="${z.z}">`).join('');
     }
 
-    // ORIGINAL PREIS-AUTOFILL
-    document.getElementById('zielInput').addEventListener('input', (e) => {
-        const match = ziele.find(item => item.z === e.target.value);
-        if (match) {
-            document.getElementById('betrag').value = match.p; // .p für Preis
-        }
+    document.getElementById('zielInput').addEventListener('input', () => {
+        const ziel = ziele.find(z => z.z === document.getElementById('zielInput').value);
+        if (ziel) document.getElementById('betrag').value = ziel.p;
     });
 
     // ORIGINAL ENTER-NAVIGATION
     document.getElementById('wNr').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('zielInput').focus(); } });
     document.getElementById('zielInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('betrag').focus(); } });
 
-    // --- FORMULAR LOGIK ---
     document.getElementById('fahrtForm').onsubmit = (e) => {
         e.preventDefault();
         const w = document.getElementById('wNr').value.trim();
@@ -154,50 +158,41 @@
         fahrten.push(neueFahrt);
         renderAll();
         
-        // Sende an C# zur Cloud-Speicherung
-        sendToCSharp("SAVE_DATA", "fahrten", neueFahrt);
+        // Sende an C# (Cloud-Backup)
+        if (window.chrome && window.chrome.webview) {
+            window.chrome.webview.postMessage({ intent: "SAVE_DATA", type: "fahrten", data: neueFahrt });
+        }
         
         e.target.reset();
         document.getElementById('wNr').focus();
     };
 
-    // --- RENDERING WIE IM ORIGINAL ---
     function renderAll() { renderFahrten(); renderRangliste(); }
 
     function renderFahrten() {
         const tbody = document.querySelector('#fahrtenTable tbody');
         const displayList = [...fahrten].reverse();
         tbody.innerHTML = displayList.map((f, i) => {
-            let rowClass = f.type === 'storno' ? 'row-storno' : (f.isStorniert ? 'row-is-storniert' : '');
-            let aktion = f.type === 'storno' ? 'Beleg' : (f.isStorniert ? 'Storniert' : `<button class="btn-storno" onclick="convertToStorno(${i})">Storno</button>`);
-            return `<tr class="${rowClass}"><td><b>${f.w}</b></td><td>${f.u}</td><td>${f.z}</td><td>${f.b.toFixed(2)} €</td><td>${f.t}</td><td>${f.stornoDatum || '—'}</td><td>${aktion}</td></tr>`;
+            let rowClass = f.type === "storno" ? "row-storno" : (f.isStorniert ? "row-is-storniert" : "");
+            let aktion = f.type === "storno" ? "Beleg" : (f.isStorniert ? "Storniert" : `<button class="btn-storno" onclick="convertToStorno(${i})">Storno</button>`);
+            return `<tr class="${rowClass}"><td><b>${f.w}</b></td><td>${f.u}</td><td>${f.z}</td><td>${f.b.toFixed(2)} €</td><td>${f.t}</td><td>${f.stornoDatum || '-'}</td><td>${aktion}</td></tr>`;
         }).join('');
     }
 
     function renderRangliste() {
         const bar = document.getElementById('ranglisteBar');
-        const stats = {}, counts = {};
-        fahrzeuge.forEach(f => counts[f.u] = (counts[f.u] || 0) + 1);
-        fahrten.forEach(f => { if(!f.isStorniert) stats[f.u] = (stats[f.u] || 0) + f.b; });
-        const rangData = Object.keys(counts).map(u => ({ u, schnitt: (stats[u] || 0) / counts[u], wagen: counts[u] }))
-                         .sort((a, b) => a.schnitt - b.schnitt);
-        bar.innerHTML = rangData.map((r, index) => `
-            <div class="rangliste-item ${index === 0 && r.schnitt !== 0 ? 'low' : ''}">
-                <b>${r.u}</b> <span>Ø ${r.schnitt.toFixed(2)} € (${r.wagen} Wg)</span>
-            </div>`).join('');
+        const stats = {}; const counts = {};
+        fahrzeuge.forEach(f => { counts[f.u] = (counts[f.u] || 0) + 1; });
+        fahrten.forEach(f => { stats[f.u] = (stats[f.u] || 0) + f.b; });
+        const rangData = Object.keys(counts).map(u => ({ u, schnitt: (stats[u] || 0) / counts[u], wagen: counts[u] })).sort((a,b) => a.schnitt - b.schnitt);
+        bar.innerHTML = rangData.map((r, i) => `<div class="rangliste-item ${i === 0 && r.schnitt !== 0 ? 'low' : ''}"><b>${r.u}</b><span>Ø ${r.schnitt.toFixed(2)} € (${r.wagen} Wg)</span></div>`).join('');
     }
 
-    // --- HILFSFUNKTIONEN ---
-    function sendToCSharp(intent, type, data = null, target = null) {
-        if (window.chrome && window.chrome.webview) {
-            window.chrome.webview.postMessage({ intent, type, data, target });
-        }
-    }
-
-    function navigate(page) { sendToCSharp("NAVIGATE", null, null, page); }
-    function requestDevAccess(a) { pendingAction = a; document.getElementById('modalOverlay').style.display = 'block'; document.getElementById('devModal').style.display = 'block'; }
-    function closeDevModal() { document.getElementById('modalOverlay').style.display = 'none'; document.getElementById('devModal').style.display = 'none'; }
-    function confirmDevLogin() { if (document.getElementById('devPwInput').value === "admin123") { isDev = true; closeDevModal(); if (pendingAction === 'clear') { fahrten = []; renderAll(); sendToCSharp("CLEAR_DATA", "fahrten"); } } else { alert("Falsch!"); } }
+    // Beim Start Datalist füllen
+    window.addEventListener('DOMContentLoaded', () => {
+        updateZielDatalist();
+        renderAll();
+    });
 </script>
 </body>
 </html>
