@@ -1,466 +1,326 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <title>Html Rangliste Weite Fahrten - Version 1.4 (Newest Top)</title>
-    <style>
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            margin: 0; 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-            background-color: #f0f2f5; 
-        }
+<meta charset="UTF-8">
+<title>Taxi Rangliste – Unternehmer (Ø pro Wagen)</title>
 
-        /* KOPFBAR */
-        header {
-            height: 120px;
-            background: #ffffff;
-            border-bottom: 2px solid #3498db;
-            display: flex;
-            flex-direction: column;
-            padding: 10px 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            z-index: 100;
-        }
+<style>
+body {
+    font-family: "Segoe UI", sans-serif;
+    margin: 0;
+    background: #f0f2f5;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
 
-        header h2 { margin: 0 0 5px 0; font-size: 1.1em; color: #2c3e50; }
+/* HEADER */
+header {
+    background: #ffffff;
+    border-bottom: 2px solid #3498db;
+    padding: 10px 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+header h2 {
+    margin: 0 0 6px 0;
+    font-size: 1.1em;
+}
+.rangliste-bar {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+}
+.rangliste-item {
+    background: #ecf0f1;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border-left: 4px solid #3498db;
+    min-width: 180px;
+}
+.rangliste-item.low {
+    border-left-color: #e74c3c;
+    background: #fee;
+}
 
-        .rangliste-bar {
-            display: flex;
-            gap: 15px;
-            overflow-x: auto;
-            padding-bottom: 5px;
-        }
+/* MAIN */
+.main {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
 
-        .rangliste-item {
-            background: #ecf0f1;
-            padding: 8px 15px;
-            border-radius: 6px;
-            min-width: 180px;
-            border-left: 4px solid #3498db;
-            flex-shrink: 0;
-        }
+/* SIDEBAR */
+.sidebar {
+    width: 280px;
+    background: #2c3e50;
+    color: white;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+}
+.sidebar h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #555;
+    padding-bottom: 6px;
+}
+.input-group {
+    margin-bottom: 10px;
+}
+.input-group label {
+    font-size: 0.85em;
+    color: #bdc3c7;
+}
+.sidebar input {
+    width: 100%;
+    padding: 8px;
+    border: none;
+    border-radius: 4px;
+    background: #34495e;
+    color: white;
+}
+.btn {
+    background: #3498db;
+    border: none;
+    color: white;
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+.nav {
+    margin-top: auto;
+    font-size: 0.9em;
+}
+.nav a {
+    color: #bdc3c7;
+    text-decoration: none;
+    display: block;
+    margin-top: 8px;
+}
 
-        .rangliste-item.low { border-left-color: #e74c3c; background: #fee; }
+/* CONTENT */
+.content {
+    flex: 1;
+    padding: 15px;
+    overflow: hidden;
+}
+.table-box {
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    height: 100%;
+    overflow-y: auto;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+th {
+    position: sticky;
+    top: 0;
+    background: #f8f9fa;
+    border-bottom: 2px solid #ddd;
+    padding: 10px;
+}
+td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9em;
+}
+.row-storno {
+    background: #ffcccc;
+    color: #a00;
+}
+.row-is-storniert {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+.btn-storno {
+    border: 1px solid #e74c3c;
+    color: #e74c3c;
+    background: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    cursor: pointer;
+}
 
-        /* HAUPTBEREICH */
-        .main-wrapper {
-            display: flex;
-            flex-grow: 1;
-            overflow: hidden;
-        }
-
-        .sidebar {
-            width: 300px;
-            background-color: #2c3e50;
-            color: white;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
-        }
-
-        .sidebar h3 { margin-top: 0; border-bottom: 1px solid #555; padding-bottom: 10px; }
-
-        .input-group { margin-bottom: 15px; }
-        .input-group label { display: block; margin-bottom: 5px; font-size: 0.85em; color: #bdc3c7; }
-
-        .sidebar input { 
-            width: 100%; padding: 10px; border: none; border-radius: 4px; 
-            background: #34495e; color: white; font-size: 1em; box-sizing: border-box;
-        }
-
-        .btn-save { 
-            background-color: #3498db; color: white; border: none; padding: 12px; 
-            border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px;
-        }
-
-        .nav-links { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
-        .nav-links a { color: #bdc3c7; text-decoration: none; font-size: 0.9em; }
-
-        /* TABELLE */
-        .content-area {
-            flex-grow: 1;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .table-container {
-            background: white;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            flex-grow: 1;
-            overflow-y: auto;
-        }
-
-        table { width: 100%; border-collapse: collapse; }
-        th { position: sticky; top: 0; background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #ddd; z-index: 10; }
-        td { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9em; }
-
-        .row-storno { background-color: #ffcccc !important; color: #a00; }
-        .row-is-storniert { color: #999; text-decoration: line-through; opacity: 0.6; }
-
-        .btn-storno { color: #e74c3c; cursor: pointer; border: 1px solid #e74c3c; background: white; padding: 2px 5px; border-radius: 3px; }
-
-        /* DEV LOGIN MODAL */
-        #devModal {
-            display: none;
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            z-index: 1000;
-            color: #333;
-        }
-        #modalOverlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
-            z-index: 999;
-        }
-    </style>
+/* DEV MODAL */
+#overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+}
+#devModal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    display: none;
+    width: 300px;
+}
+</style>
 </head>
+
 <body>
 
-<div id="modalOverlay"></div>
+<div id="overlay"></div>
 <div id="devModal">
-    <h3>Entwickler-Login</h3>
-    <p>Bitte Passwort eingeben:</p>
-    <input type="password" id="devPwInput" style="width:100%; padding:10px; margin-bottom:10px;">
-    <button onclick="confirmDevLogin()" class="btn-save">Anmelden</button>
-    <button onclick="closeDevModal()" style="margin-top:5px; background:none; border:none; color:gray; cursor:pointer; width:100%;">Abbrechen</button>
+    <h3>Entwickler-Zugriff</h3>
+    <input type="password" id="devPw" placeholder="Passwort">
+    <button class="btn" onclick="confirmDev()">OK</button>
 </div>
 
 <header>
-    <h2>Html Rangliste - Unternehmer Übersicht (Ø pro Wagen)</h2>
-    <div class="rangliste-bar" id="ranglisteBar"></div>
+    <h2>Taxi Rangliste – Ø Einnahmen pro Wagen</h2>
+    <div class="rangliste-bar" id="rangliste"></div>
 </header>
 
-<div class="main-wrapper">
+<div class="main">
     <div class="sidebar">
         <h3>Fahrt erfassen</h3>
-        <form id="fahrtForm">
-            <div class="input-group">
-                <label>Wagen Nr.</label>
-                <input type="text" id="wNr" placeholder="z.B. 101" required autofocus>
-            </div>
-            <div class="input-group">
-                <label>Ziel auswählen</label>
-                <input list="zielOptionen" id="zielInput" placeholder="Ziel suchen..." required>
-                <datalist id="zielOptionen"></datalist>
-            </div>
-            <div class="input-group">
-                <label>Einnahme (€)</label>
-                <input type="number" id="betrag" placeholder="0.00" step="0.01" required>
-            </div>
-            <button type="submit" class="btn-save">Speichern (Enter)</button>
-        </form>
 
-        <div class="nav-links">
-            <a href="wg.html">⚙️ Fahrzeuge</a>
-            <a href="ziele.html">📍 Ziele</a>
-            <a href="#" onclick="requestDevAccess('clear')" style="color:#e74c3c; margin-top:10px;">🗑️ Alles löschen (Sperre)</a>
+        <div class="input-group">
+            <label>Wagen</label>
+            <input id="w" autofocus>
+        </div>
+
+        <div class="input-group">
+            <label>Ziel</label>
+            <input id="z">
+        </div>
+
+        <div class="input-group">
+            <label>Betrag (€)</label>
+            <input id="b" type="number" step="0.01">
+        </div>
+
+        <button class="btn" onclick="add()">Speichern</button>
+
+        <div class="nav">
+            <a href="#" onclick="requestDev('clear')">🗑️ Alles löschen</a>
         </div>
     </div>
 
-    <div class="content-area">
-        <div class="table-container" id="scrollContainer">
-            <table id="fahrtenTable">
+    <div class="content">
+        <div class="table-box">
+            <table>
                 <thead>
-                    <tr>
-                        <th>Wagen</th><th>Unternehmer</th><th>Ziel</th><th>Einnahme</th><th>Zeitstempel</th><th>Storno-Datum</th><th>Aktion</th>
-                    </tr>
+                <tr>
+                    <th>Wagen</th>
+                    <th>Unternehmer</th>
+                    <th>Ziel</th>
+                    <th>Betrag</th>
+                    <th>Zeit</th>
+                    <th>Aktion</th>
+                </tr>
                 </thead>
-                <tbody></tbody>
+                <tbody id="tbody"></tbody>
             </table>
         </div>
     </div>
 </div>
 
 <script>
-    /* ================================
-       🔒 ROBUSTER LOCALSTORAGE LAYER
-       ================================ */
-    
-    function safeLoad(key, fallback) {
-        try {
-            const raw = localStorage.getItem(key);
-            if (!raw) return structuredClone(fallback);
-    
-            const parsed = JSON.parse(raw);
-            return Array.isArray(fallback)
-                ? (Array.isArray(parsed) ? parsed : structuredClone(fallback))
-                : (typeof parsed === 'object' && parsed !== null ? parsed : structuredClone(fallback));
-        } catch {
-            return structuredClone(fallback);
-        }
+/* ========= STORAGE ========= */
+
+function load(key, def) {
+    try {
+        const v = JSON.parse(localStorage.getItem(key));
+        return Array.isArray(def) ? (Array.isArray(v) ? v : def) : (v ?? def);
+    } catch { return def; }
+}
+function save(key, v) {
+    localStorage.setItem(key, JSON.stringify(v));
+}
+
+let fahrten = load("fahrten", []);
+let fahrzeuge = load("fahrzeuge", []);
+if (fahrzeuge.length === 0) {
+    fahrzeuge = [
+        { w: "101", u: "Unternehmer A" },
+        { w: "102", u: "Unternehmer A" },
+        { w: "201", u: "Unternehmer B" }
+    ];
+    save("fahrzeuge", fahrzeuge);
+}
+
+/* ========= DEV ========= */
+const DEV_PW = "1234";
+let dev = false;
+let pending = null;
+
+function requestDev(action) {
+    if (dev) return exec(action);
+    pending = action;
+    overlay.style.display = devModal.style.display = "block";
+}
+function confirmDev() {
+    if (devPw.value === DEV_PW) {
+        dev = true;
+        overlay.style.display = devModal.style.display = "none";
+        exec(pending);
+    } else alert("Falsch");
+    devPw.value = "";
+}
+function exec(a) {
+    if (a === "clear" && confirm("Alles löschen?")) {
+        fahrten = [];
+        save("fahrten", fahrten);
+        render();
     }
-    
-    function safeSave(key, value) {
-        try {
-            localStorage.setItem(key, JSON.stringify(value));
-        } catch {
-            alert("⚠️ Speicher voll oder blockiert!\nDaten konnten nicht gespeichert werden.");
-        }
-    }
-    
-    /* =========================
-       INIT – einmalige Sicherung
-       ========================= */
+}
 
-    if (!localStorage.getItem('wg_data')) {
-        localStorage.setItem('wg_data', JSON.stringify([]));
-    }
+/* ========= LOGIK ========= */
 
-    if (!localStorage.getItem('ziele_data')) {
-        localStorage.setItem('ziele_data', JSON.stringify([]));
-    }
+function add() {
+    const wv = w.value.trim();
+    const zv = z.value.trim();
+    const bv = parseFloat(b.value);
 
-    if (!localStorage.getItem('fahrten_data')) {
-        localStorage.setItem('fahrten_data', JSON.stringify([]));
-    }
+    const map = fahrzeuge.find(x => x.w === wv);
+    if (!map) return alert("Unbekannter Wagen");
 
-    // Passwort ist "1234" (als Base64 verschleiert)
-    const H_PW = "MTIzNA=="; 
-    let isDev = false;
-    let pendingAction = null; 
-
-    const wNrInput = document.getElementById('wNr');
-    const zielInput = document.getElementById('zielInput');
-    const betragInput = document.getElementById('betrag');
-
-    let fahrzeuge = JSON.parse(localStorage.getItem('wg_data') || '[]');
-    let ziele = JSON.parse(localStorage.getItem('ziele_data') || '[]');
-    let fahrten = JSON.parse(localStorage.getItem('fahrten_data') || '[]');
-
-    function requestDevAccess(actionType, index = null) {
-        if (isDev) { executeAction(actionType, index); return; }
-        pendingAction = { type: actionType, index: index };
-        document.getElementById('modalOverlay').style.display = 'block';
-        document.getElementById('devModal').style.display = 'block';
-        document.getElementById('devPwInput').focus();
-    }
-
-    function confirmDevLogin() {
-        if (btoa(document.getElementById('devPwInput').value) === H_PW) {
-            isDev = true;
-            closeDevModal();
-            executeAction(pendingAction.type, pendingAction.index);
-        } else {
-            alert("Zugriff verweigert!");
-        }
-        document.getElementById('devPwInput').value = "";
-    }
-
-    function closeDevModal() {
-        document.getElementById('modalOverlay').style.display = 'none';
-        document.getElementById('devModal').style.display = 'none';
-    }
-
-    function executeAction(type, index) {
-        // Da die Liste zum Rendern umgedreht wird, müssen wir den Index korrigieren
-        // Aber einfacher: Wir löschen über die eindeutige ID
-        if (type === 'delete') {
-            if (confirm("Diesen Eintrag permanent löschen?")) {
-                const realIndex = fahrten.length - 1 - index; // Korrektur wegen reverse()
-                fahrten.splice(realIndex, 1);
-                saveAndRefresh();
-            }
-        } else if (type === 'clear') {
-            if (confirm("ALLE DATEN LÖSCHEN?")) { fahrten = []; saveAndRefresh(); }
-        }
-    }
-
-    window.handleAdminContext = (e, index) => {
-        e.preventDefault();
-        requestDevAccess('delete', index);
-    };
-
-    function updateZielDatalist() {
-        const datalist = document.getElementById('zielOptionen');
-        datalist.innerHTML = ziele.map(z => `<option value="${z.z}">`).join('');
-    }
-
-    zielInput.addEventListener('input', () => {
-        const ziel = ziele.find(z => z.z === zielInput.value);
-        if (ziel) betragInput.value = ziel.p;
+    fahrten.push({
+        w: wv,
+        u: map.u,
+        z: zv,
+        b: bv,
+        t: new Date().toLocaleString()
     });
+    save("fahrten", fahrten);
+    w.value = z.value = b.value = "";
+    render();
+}
 
-    wNrInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); zielInput.focus(); } });
-    zielInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); betragInput.focus(); } });
+function render() {
+    tbody.innerHTML = [...fahrten].reverse().map((f,i)=>`
+        <tr>
+            <td>${f.w}</td>
+            <td>${f.u}</td>
+            <td>${f.z}</td>
+            <td>${f.b.toFixed(2)} €</td>
+            <td>${f.t}</td>
+            <td></td>
+        </tr>`).join("");
 
-    document.getElementById('fahrtForm').onsubmit = (e) => {
-        e.preventDefault();
-        const w = wNrInput.value.trim();
-        const z = zielInput.value.trim();
-        const b = parseFloat(betragInput.value);
-        const mapping = fahrzeuge.find(f => f.w === w);
+    const stats = {};
+    const count = {};
+    fahrzeuge.forEach(f => count[f.u]=(count[f.u]||0)+1);
+    fahrten.forEach(f => stats[f.u]=(stats[f.u]||0)+f.b);
 
-        if(!mapping) { alert("Wagen " + w + " unbekannt!"); return; }
+    rangliste.innerHTML = Object.keys(count).map(u=>{
+        const avg = (stats[u]||0)/count[u];
+        return `<div class="rangliste-item">
+            <b>${u}</b><br>Ø ${avg.toFixed(2)} €
+        </div>`;
+    }).join("");
+}
 
-        if (z !== "" && !ziele.some(item => item.z.toLowerCase() === z.toLowerCase())) {
-            if (confirm(`Ziel "${z}" neu speichern?`)) {
-                ziele.push({ z, p: b });
-                localStorage.setItem('ziele_data', JSON.stringify(ziele));
-                updateZielDatalist();
-            }
-        }
-
-        fahrten.push({
-            id: Date.now(), w, u: mapping.u, z, b,
-            t: new Date().toLocaleString('de-DE'),
-            stornoDatum: "", type: "normal", isStorniert: false
-        });
-
-        saveAndRefresh();
-        wNrInput.value = ''; zielInput.value = ''; betragInput.value = '';
-        wNrInput.focus();
-    };
-
-    window.convertToStorno = (index) => {
-        const realIndex = fahrten.length - 1 - index;
-        const f = fahrten[realIndex];
-        if (f.isStorniert || f.type === "storno") return;
-        if (confirm(`Stornieren?`)) {
-            f.isStorniert = true;
-            fahrten.push({
-                id: Date.now(), w: f.w, u: f.u, z: "STORNO: " + f.z, b: -f.b,
-                t: f.t, stornoDatum: new Date().toLocaleString('de-DE'), type: "storno"
-            });
-            saveAndRefresh();
-        }
-    };
-
-    function renderFahrten() {
-        const tbody = document.querySelector('#fahrtenTable tbody');
-        if (!tbody) return;
-
-        // Sicherheitskopie – Anzeige neueste zuerst
-        const displayList = Array.isArray(fahrten)
-            ? [...fahrten].reverse()
-            : [];
-
-        tbody.innerHTML = displayList.map((f, i) => {
-            // 🔒 Defensive Defaults
-            const wagen = f?.w ?? '—';
-            const unternehmer = f?.u ?? '—';
-            const ziel = f?.z ?? '—';
-            const betrag = (typeof f?.b === 'number' && Number.isFinite(f.b))
-                ? f.b.toFixed(2) + ' €'
-                : '0.00 €';
-            const zeit = f?.t ?? '—';
-            const stornoDatum = f?.stornoDatum || '—';
-
-            const isStorno = f?.type === 'storno';
-            const isStorniert = f?.isStorniert === true;
-
-            // CSS-Klasse
-            let rowClass = '';
-            if (isStorno) rowClass = 'row-storno';
-            else if (isStorniert) rowClass = 'row-is-storniert';
-
-            // Aktion
-            let aktion = '—';
-            if (isStorno) {
-                aktion = 'Beleg';
-            } else if (isStorniert) {
-                aktion = 'Storniert';
-            } else {
-                aktion = `<button class="btn-storno" onclick="convertToStorno(${i})">Storno</button>`;
-            }
-
-            return `
-                <tr class="${rowClass}" oncontextmenu="handleAdminContext(event, ${i})">
-                    <td><b>${wagen}</b></td>
-                    <td>${unternehmer}</td>
-                    <td>${ziel}</td>
-                    <td>${betrag}</td>
-                    <td style="color:#888">${zeit}</td>
-                    <td style="color:#e74c3c; font-weight:bold;">${stornoDatum}</td>
-                    <td>${aktion}</td>
-                </tr>
-            `;
-        }).join('');
-    }
-
-    function renderRangliste() {
-        const bar = document.getElementById('ranglisteBar');
-        if (!bar) return;
-
-        // Sicherheitskopien
-        const stats = {};
-        const counts = {};
-
-        // 1️⃣ Wagen pro Unternehmer zählen
-        fahrzeuge.forEach(f => {
-            if (!f.u) return;
-            counts[f.u] = (counts[f.u] || 0) + 1;
-        });
-
-        // 2️⃣ Einnahmen pro Unternehmer aufsummieren (inkl. Storno)
-        fahrten.forEach(f => {
-            if (!f.u || typeof f.b !== "number") return;
-            stats[f.u] = (stats[f.u] || 0) + f.b;
-        });
-
-        // 3️⃣ Rangliste aufbauen
-        const rangData = Object.keys(counts)
-            .filter(u => counts[u] > 0) // ❗ Unternehmer ohne Wagen raus
-            .map(u => {
-                const summe = stats[u] || 0;
-                const wagen = counts[u];
-                const schnitt = summe / wagen;
-
-                return {
-                    u,
-                    schnitt,
-                    wagen
-                };
-            })
-            .filter(r => Number.isFinite(r.schnitt)) // ❗ Schutz vor NaN/Infinity
-            .sort((a, b) => a.schnitt - b.schnitt); // ❗ schlechtester zuerst
-
-        // 4️⃣ Rendern
-        bar.innerHTML = rangData.map((r, index) => `
-            <div class="rangliste-item ${index === 0 && r.schnitt !== 0 ? 'low' : ''}">
-                <b>${r.u}</b>
-                <span>Ø ${r.schnitt.toFixed(2)} € (${r.wagen} Wagen)</span>
-            </div>
-        `).join('');
-    }
-
-    function saveAndRefresh() {
-        localStorage.setItem('fahrten_data', JSON.stringify(fahrten));
-        renderAll();
-    }
-
-    function renderAll() { renderFahrten(); renderRangliste(); }
-
-    updateZielDatalist();
-    renderAll();
-
-    function lockApp() {
-    if (window.chrome?.webview)
-        window.chrome.webview.postMessage("LOCK_APP");
-    }
-
-    function unlockApp() {
-        if (window.chrome?.webview)
-            window.chrome.webview.postMessage("UNLOCK_APP");
-    }
-
-    function exitApp() {
-        if (window.chrome?.webview)
-            window.chrome.webview.postMessage("EXIT_APP");
-    }
+render();
 </script>
 </body>
 </html>
