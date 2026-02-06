@@ -2,196 +2,94 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Html Rangliste - Version 1.4</title>
+    <title>Taxi Rangliste Pro - View</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background-color: #f0f2f5; }
-        header { height: 120px; background: #ffffff; border-bottom: 2px solid #3498db; display: flex; flex-direction: column; padding: 10px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 100; }
-        header h2 { margin: 0 0 5px 0; font-size: 1.1em; color: #2c3e50; }
-        .rangliste-bar { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 5px; }
-        .rangliste-item { background: #ecf0f1; padding: 8px 15px; border-radius: 6px; min-width: 180px; border-left: 4px solid #3498db; flex-shrink: 0; }
-        .rangliste-item.low { border-left-color: #e74c3c; background: #fee; }
+        /* Styles bleiben gleich wie zuvor */
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background-color: #f0f2f5; display: flex; flex-direction: column; height: 100vh; }
+        header { height: 100px; background: white; border-bottom: 2px solid #3498db; padding: 10px 20px; }
+        .rangliste-bar { display: flex; gap: 15px; overflow-x: auto; }
         .main-wrapper { display: flex; flex-grow: 1; overflow: hidden; }
-        .sidebar { width: 300px; background-color: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; box-shadow: 2px 0 10px rgba(0,0,0,0.2); }
-        .sidebar h3 { margin-top: 0; border-bottom: 1px solid #555; padding-bottom: 10px; }
-        .input-group { margin-bottom: 15px; }
-        .input-group label { display: block; margin-bottom: 5px; font-size: 0.85em; color: #bdc3c7; }
-        .sidebar input { width: 100%; padding: 10px; border: none; border-radius: 4px; background: #34495e; color: white; font-size: 1em; box-sizing: border-box; }
-        .btn-save { background-color: #3498db; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
-        .nav-links { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
-        .nav-links a { color: #bdc3c7; text-decoration: none; font-size: 0.9em; cursor: pointer; }
-        .content-area { flex-grow: 1; padding: 20px; display: flex; flex-direction: column; overflow: hidden; }
-        .table-container { background: white; border-radius: 8px; border: 1px solid #ddd; flex-grow: 1; overflow-y: auto; }
-        table { width: 100%; border-collapse: collapse; }
-        th { position: sticky; top: 0; background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #ddd; z-index: 10; }
-        td { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9em; }
-        .row-storno { background-color: #ffcccc !important; color: #a00; }
-        .row-is-storniert { color: #999; text-decoration: line-through; opacity: 0.6; }
-        .btn-storno { color: #e74c3c; cursor: pointer; border: 1px solid #e74c3c; background: white; padding: 2px 5px; border-radius: 3px; }
-        #devModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5); z-index: 1000; color: #333; }
-        #modalOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 999; }
+        .sidebar { width: 300px; background: #2c3e50; color: white; padding: 20px; }
+        .content-area { flex-grow: 1; padding: 20px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; }
     </style>
 </head>
 <body>
 
-<div id="modalOverlay"></div>
-<div id="devModal">
-    <h3>Entwickler-Login</h3>
-    <p>Bitte Passwort eingeben:</p>
-    <input type="password" id="devPwInput" style="width:100%; padding:10px; margin-bottom:10px;">
-    <button onclick="confirmDevLogin()" class="btn-save">Anmelden</button>
-    <button onclick="closeDevModal()" style="margin-top:5px; background:none; border:none; color:gray; cursor:pointer; width:100%;">Abbrechen</button>
-</div>
-
 <header>
-    <h2>Html Rangliste - Unternehmer Übersicht (Ø pro Wagen)</h2>
-    <div class="rangliste-bar" id="ranglisteBar"></div>
+    <h2 id="headerTitle">Taxi Rangliste</h2>
+    <div class="rangliste-bar" id="ranglisteDisplay"></div>
 </header>
 
 <div class="main-wrapper">
     <div class="sidebar">
-        <h3>Fahrt erfassen</h3>
-        <form id="fahrtForm">
-            <div class="input-group">
-                <label>Wagen Nr.</label>
-                <input type="text" id="wNr" placeholder="z.B. 101" required autofocus>
-            </div>
-            <div class="input-group">
-                <label>Ziel auswählen</label>
-                <input list="zielOptionen" id="zielInput" placeholder="Ziel suchen..." required>
-                <datalist id="zielOptionen"></datalist>
-            </div>
-            <div class="input-group">
-                <label>Einnahme (€)</label>
-                <input type="number" id="betrag" placeholder="0.00" step="0.01" required>
-            </div>
-            <button type="submit" class="btn-save">Speichern (Enter)</button>
-        </form>
-
-        <div class="nav-links">
-            <a onclick="navigate('wg.html')">⚙️ Fahrzeuge</a>
-            <a onclick="navigate('ziele.html')">📍 Ziele</a>
-            <a onclick="requestDevAccess('clear')" style="color:#e74c3c; margin-top:10px;">🗑️ Alles löschen</a>
+        <h3>Erfassung</h3>
+        <input type="text" id="wNr" placeholder="Wagen Nr" onkeypress="handleEnter(event, 'zielInput')">
+        <input type="text" id="zielInput" list="zielOptionen" placeholder="Ziel" oninput="onZielChange(this.value)" onkeypress="handleEnter(event, 'betrag')">
+        <datalist id="zielOptionen"></datalist>
+        <input type="number" id="betrag" placeholder="0.00" step="0.01">
+        <button onclick="sendSave()" style="width:100%; margin-top:10px; padding:10px; background:#3498db; color:white; border:none;">Speichern</button>
+        
+        <div style="margin-top:20px;">
+            <button onclick="navigate('wg.html')" style="width:100%; margin-bottom:5px;">Fahrzeuge</button>
+            <button onclick="navigate('ziele.html')" style="width:100%;">Ziele</button>
         </div>
     </div>
 
     <div class="content-area">
-        <div class="table-container">
-            <table id="fahrtenTable">
-                <thead>
-                    <tr>
-                        <th>Wagen</th><th>Unternehmer</th><th>Ziel</th><th>Einnahme</th><th>Zeitstempel</th><th>Storno-Datum</th><th>Aktion</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        <table>
+            <thead><tr><th>Wagen</th><th>Ziel</th><th>Preis</th><th>Zeit</th></tr></thead>
+            <tbody id="fahrtenTbody"></tbody>
+        </table>
     </div>
 </div>
 
 <script>
-    let fahrzeuge = [];
-    let ziele = [];
-    let fahrten = [];
-
-    const H_PW = "MTIzNA=="; 
-    let isDev = false;
-    let pendingAction = null; 
-
-    // 1. C# Kommunikation
-    if (window.chrome && window.chrome.webview) {
-        window.chrome.webview.addEventListener('message', event => {
-            // Sicherstellen, dass wir ein Objekt haben
-            let msg = event.data;
-            if (typeof msg === 'string') {
-                try { msg = JSON.parse(msg); } catch(e) { return; }
-            }
+    // Empfang von C# (Alles kommt fertig berechnet an)
+    window.chrome.webview.addEventListener('message', event => {
+        const data = event.data;
+        if (data.type === "UPDATE_UI") {
+            // 1. Datalist für Ziele füllen
+            document.getElementById('zielOptionen').innerHTML = data.ziele.map(z => `<option value="${z.z}">`).join('');
             
-            if (msg.type === "INIT_DATA") {
-                fahrzeuge = msg.fahrzeuge || [];
-                ziele = msg.ziele || [];
-                fahrten = msg.fahrten || [];
-                
-                updateZielDatalist();
-                renderAll();
-            }
-        });
-    }
+            // 2. Fahrten-Tabelle füllen
+            document.getElementById('fahrtenTbody').innerHTML = data.fahrten.map(f => `
+                <tr><td>${f.w}</td><td>${f.z}</td><td>${f.b.toFixed(2)} €</td><td>${f.t}</td></tr>
+            `).join('');
 
-    // 2. Autovervollständigung fixieren
-    function updateZielDatalist() {
-        const dl = document.getElementById('zielOptionen');
-        if (!dl) return;
-        // Wir suchen nach 'z' (Zielname) aus deinem C# Model
-        dl.innerHTML = ziele.map(item => `<option value="${item.z || item.Name || ''}">`).join('');
-    }
-
-    // Preis-Autofill
-    document.getElementById('zielInput').addEventListener('input', function(e) {
-        const val = e.target.value;
-        // Wir suchen das Ziel in der Liste und nehmen 'p' (Preis)
-        const match = ziele.find(item => (item.z || item.Name) === val);
-        if (match) {
-            document.getElementById('betrag').value = match.p || match.Preis || "";
+            // 3. Rangliste oben füllen
+            document.getElementById('ranglisteDisplay').innerHTML = data.rangliste.map(r => `
+                <div style="padding:10px; background:#ecf0f1; border-left:4px solid #3498db;">
+                    <b>${r.u}</b><br>Ø ${r.schnitt.toFixed(2)} €
+                </div>
+            `).join('');
+        }
+        if (data.type === "SET_PRICE") {
+            document.getElementById('betrag').value = data.price;
         }
     });
 
-    // 3. Navigation & Rendering
-    function renderAll() {
-        renderFahrten();
-        renderRangliste();
+    function onZielChange(val) {
+        window.chrome.webview.postMessage({ intent: "GET_PRICE", ziel: val });
     }
 
-    function renderFahrten() {
-        const tbody = document.querySelector('#fahrtenTable tbody');
-        if (!tbody) return;
-        const displayList = [...fahrten].reverse();
-        tbody.innerHTML = displayList.map((f, i) => {
-            let rowClass = f.type === 'storno' ? 'row-storno' : (f.isStorniert ? 'row-is-storniert' : '');
-            let aktion = f.type === 'storno' ? 'Beleg' : (f.isStorniert ? 'Storniert' : `<button class="btn-storno" onclick="convertToStorno(${i})">Storno</button>`);
-            return `<tr class="${rowClass}"><td><b>${f.w}</b></td><td>${f.u}</td><td>${f.z}</td><td>${(f.b || 0).toFixed(2)} €</td><td style="color:#888">${f.t}</td><td style="color:#e74c3c; font-weight:bold;">${f.stornoDatum || '—'}</td><td>${aktion}</td></tr>`;
-        }).join('');
-    }
-
-    function renderRangliste() {
-        const bar = document.getElementById('ranglisteBar');
-        if (!bar) return;
-        const stats = {};
-        const counts = {};
-        fahrzeuge.forEach(f => counts[f.u] = (counts[f.u] || 0) + 1);
-        fahrten.forEach(f => { if(!f.isStorniert) stats[f.u] = (stats[f.u] || 0) + f.b; });
-        const rangData = Object.keys(counts).map(u => ({
-            u, schnitt: (stats[u] || 0) / counts[u], wagen: counts[u]
-        })).sort((a, b) => a.schnitt - b.schnitt);
-        bar.innerHTML = rangData.map((r, index) => `<div class="rangliste-item ${index === 0 && r.schnitt !== 0 ? 'low' : ''}"><b>${r.u}</b><span>Ø ${r.schnitt.toFixed(2)} € (${r.wagen} Wagen)</span></div>`).join('');
-    }
-
-    document.getElementById('fahrtForm').onsubmit = (e) => {
-        e.preventDefault();
-        const w = document.getElementById('wNr').value;
-        const z = document.getElementById('zielInput').value;
-        const b = parseFloat(document.getElementById('betrag').value);
-        const mapping = fahrzeuge.find(f => f.w === w);
-
-        if(!mapping) { alert("Wagen unbekannt!"); return; }
-
-        const neueFahrt = { id: Date.now(), w, u: mapping.u, z, b, t: new Date().toLocaleString('de-DE'), stornoDatum: "", type: "normal", isStorniert: false };
-        fahrten.push(neueFahrt);
-        renderAll();
-        sendToCSharp("SAVE_DATA", "fahrten", neueFahrt);
-        e.target.reset();
+    function sendSave() {
+        const payload = {
+            intent: "SAVE_ENTRY",
+            w: document.getElementById('wNr').value,
+            z: document.getElementById('zielInput').value,
+            b: parseFloat(document.getElementById('betrag').value)
+        };
+        window.chrome.webview.postMessage(payload);
+        document.getElementById('wNr').value = "";
+        document.getElementById('zielInput').value = "";
+        document.getElementById('betrag').value = "";
         document.getElementById('wNr').focus();
-    };
-
-    function sendToCSharp(intent, type, data = null, target = null) {
-        if (window.chrome && window.chrome.webview) {
-            window.chrome.webview.postMessage({ intent, type, data, target });
-        }
     }
 
-    function navigate(page) { sendToCSharp("NAVIGATE", null, null, page); }
-    function requestDevAccess(a) { pendingAction = a; document.getElementById('modalOverlay').style.display = 'block'; document.getElementById('devModal').style.display = 'block'; }
-    function closeDevModal() { document.getElementById('modalOverlay').style.display = 'none'; document.getElementById('devModal').style.display = 'none'; }
-    function confirmDevLogin() { if (btoa(document.getElementById('devPwInput').value) === H_PW) { isDev = true; closeDevModal(); if (pendingAction === 'clear') { fahrten = []; renderAll(); sendToCSharp("CLEAR_DATA", "fahrten"); } } else { alert("Falsch!"); } }
+    function handleEnter(e, nextId) { if(e.key === 'Enter') document.getElementById(nextId).focus(); }
+    function navigate(page) { window.chrome.webview.postMessage({ intent: "NAVIGATE", target: page }); }
 </script>
 </body>
 </html>
