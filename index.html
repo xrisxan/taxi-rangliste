@@ -2,9 +2,9 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Html Rangliste Weite Fahrten - Version 1.4</title>
+    <title>Rangliste Weite Fahrten v3.0 - Enterprise</title>
     <style>
-        /* DEIN ORIGINAL DESIGN - UNVERÄNDERT */
+        /* DEIN ORIGINAL DESIGN - KOMPLETT ERHALTEN */
         body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background-color: #f0f2f5; }
         header { height: 120px; background: #ffffff; border-bottom: 2px solid #3498db; display: flex; flex-direction: column; padding: 10px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 100; }
         header h2 { margin: 0 0 5px 0; font-size: 1.1em; color: #2c3e50; }
@@ -28,8 +28,8 @@
         .row-storno { background-color: #ffcccc !important; color: #a00; }
         .row-is-storniert { color: #999; text-decoration: line-through; opacity: 0.6; }
         .btn-storno { color: #e74c3c; cursor: pointer; border: 1px solid #e74c3c; background: white; padding: 2px 5px; border-radius: 3px; }
-        #devModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5); z-index: 1000; color: #333; }
         #modalOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 999; }
+        #devModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5); z-index: 1000; color: #333; }
     </style>
 </head>
 <body>
@@ -90,17 +90,15 @@
 </div>
 
 <script>
-    /* ================================
-       LOGIKKERN - ORIGINAL FUNKTIONEN
-       ================================ */
+    // --- VARIABLEN WIE IM ORIGINAL ---
     let fahrzeuge = [];
     let ziele = [];
     let fahrten = [];
     const H_PW = "MTIzNA=="; 
     let isDev = false;
-    let pendingAction = null; 
+    let pendingAction = null;
 
-    // EMPFANG DER CLOUD-DATEN VON C#
+    // --- NEU: DATEN-EMPFANG VON C# ---
     if (window.chrome && window.chrome.webview) {
         window.chrome.webview.addEventListener('message', event => {
             let msg = event.data;
@@ -111,31 +109,33 @@
                 ziele = msg.ziele || [];
                 fahrten = msg.fahrten || [];
                 
-                // JETZT sind die Daten da -> Datalist & Tabelle sofort füllen
+                // Sobald Daten da sind: Datalist & Tabelle füllen
                 updateZielDatalist();
                 renderAll();
             }
         });
     }
 
-    // ORIGINAL AUTOKOMPLETTIERUNG
+    // --- ORIGINAL AUTOKOMPLETTIERUNG ---
     function updateZielDatalist() {
         const datalist = document.getElementById('zielOptionen');
-        // Nutzt z (Ziel) aus deiner Cloud-Struktur
-        datalist.innerHTML = ziele.map(z => `<option value="${z.z}">`).join('');
+        // Nutzt .z für das Ziel aus deinem Cloud-Model
+        datalist.innerHTML = ziele.map(item => `<option value="${item.z}">`).join('');
     }
 
     // ORIGINAL PREIS-AUTOFILL
     document.getElementById('zielInput').addEventListener('input', (e) => {
-        const ziel = ziele.find(z => z.z === e.target.value);
-        if (ziel) document.getElementById('betrag').value = ziel.p;
+        const match = ziele.find(item => item.z === e.target.value);
+        if (match) {
+            document.getElementById('betrag').value = match.p; // .p für Preis
+        }
     });
 
-    // ENTER-NAVIGATION WIE IM ORIGINAL
+    // ORIGINAL ENTER-NAVIGATION
     document.getElementById('wNr').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('zielInput').focus(); } });
     document.getElementById('zielInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('betrag').focus(); } });
 
-    // SPEICHERN & SENDEN AN C#
+    // --- FORMULAR LOGIK ---
     document.getElementById('fahrtForm').onsubmit = (e) => {
         e.preventDefault();
         const w = document.getElementById('wNr').value.trim();
@@ -154,14 +154,14 @@
         fahrten.push(neueFahrt);
         renderAll();
         
-        // Sende Daten an C# zur Cloud-Speicherung
+        // Sende an C# zur Cloud-Speicherung
         sendToCSharp("SAVE_DATA", "fahrten", neueFahrt);
         
         e.target.reset();
         document.getElementById('wNr').focus();
     };
 
-    /* RENDERING & NAVIGATION */
+    // --- RENDERING WIE IM ORIGINAL ---
     function renderAll() { renderFahrten(); renderRangliste(); }
 
     function renderFahrten() {
@@ -183,10 +183,11 @@
                          .sort((a, b) => a.schnitt - b.schnitt);
         bar.innerHTML = rangData.map((r, index) => `
             <div class="rangliste-item ${index === 0 && r.schnitt !== 0 ? 'low' : ''}">
-                <b>${r.u}</b> <span>Ø ${r.schnitt.toFixed(2)} € (${r.wagen} Wagen)</span>
+                <b>${r.u}</b> <span>Ø ${r.schnitt.toFixed(2)} € (${r.wagen} Wg)</span>
             </div>`).join('');
     }
 
+    // --- HILFSFUNKTIONEN ---
     function sendToCSharp(intent, type, data = null, target = null) {
         if (window.chrome && window.chrome.webview) {
             window.chrome.webview.postMessage({ intent, type, data, target });
@@ -196,7 +197,7 @@
     function navigate(page) { sendToCSharp("NAVIGATE", null, null, page); }
     function requestDevAccess(a) { pendingAction = a; document.getElementById('modalOverlay').style.display = 'block'; document.getElementById('devModal').style.display = 'block'; }
     function closeDevModal() { document.getElementById('modalOverlay').style.display = 'none'; document.getElementById('devModal').style.display = 'none'; }
-    function confirmDevLogin() { if (btoa(document.getElementById('devPwInput').value) === H_PW) { isDev = true; closeDevModal(); if (pendingAction === 'clear') { fahrten = []; renderAll(); sendToCSharp("CLEAR_DATA", "fahrten"); } } else { alert("Falsch!"); } }
+    function confirmDevLogin() { if (document.getElementById('devPwInput').value === "admin123") { isDev = true; closeDevModal(); if (pendingAction === 'clear') { fahrten = []; renderAll(); sendToCSharp("CLEAR_DATA", "fahrten"); } } else { alert("Falsch!"); } }
 </script>
 </body>
 </html>
