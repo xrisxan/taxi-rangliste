@@ -4,33 +4,117 @@
     <meta charset="UTF-8">
     <title>Rangliste Weite Fahrten v3.0 - Enterprise</title>
     <style>
-        /* EXAKT DEINE ORIGINAL STYLES */
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background-color: #f0f2f5; }
-        header { height: 120px; background: #ffffff; border-bottom: 2px solid #3498db; display: flex; flex-direction: column; padding: 10px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 100; }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            background-color: #f0f2f5; 
+        }
+
+        /* KOPFBAR */
+        header {
+            height: 120px;
+            background: #ffffff;
+            border-bottom: 2px solid #3498db;
+            display: flex;
+            flex-direction: column;
+            padding: 10px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
         header h2 { margin: 0 0 5px 0; font-size: 1.1em; color: #2c3e50; }
-        .rangliste-bar { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 5px; }
-        .rangliste-item { background: #ecf0f1; padding: 8px 15px; border-radius: 6px; min-width: 180px; border-left: 4px solid #3498db; flex-shrink: 0; }
+        
+        .rangliste-bar {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+
+        .rangliste-item {
+            background: #ecf0f1;
+            padding: 8px 15px;
+            border-radius: 6px;
+            min-width: 180px;
+            border-left: 4px solid #3498db;
+            flex-shrink: 0;
+        }
+
         .rangliste-item.low { border-left-color: #e74c3c; background: #fee; }
-        .main-wrapper { display: flex; flex-grow: 1; overflow: hidden; }
-        .sidebar { width: 300px; background-color: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; box-shadow: 2px 0 10px rgba(0,0,0,0.2); }
+
+        /* HAUPTBEREICH */
+        .main-wrapper {
+            display: flex;
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 300px;
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+        }
+
         .sidebar h3 { margin-top: 0; border-bottom: 1px solid #555; padding-bottom: 10px; }
+        
         .input-group { margin-bottom: 15px; }
         .input-group label { display: block; margin-bottom: 5px; font-size: 0.85em; color: #bdc3c7; }
-        .sidebar input { width: 100%; padding: 10px; border: none; border-radius: 4px; background: #34495e; color: white; font-size: 1em; box-sizing: border-box; }
-        .btn-save { background-color: #3498db; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+        
+        .sidebar input { 
+            width: 100%; padding: 10px; border: none; border-radius: 4px; 
+            background: #34495e; color: white; font-size: 1em; box-sizing: border-box;
+        }
+
+        .btn-save { 
+            background-color: #3498db; color: white; border: none; padding: 12px; 
+            border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px;
+        }
+
         .nav-links { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
-        .nav-links a { color: #bdc3c7; text-decoration: none; font-size: 0.9em; cursor: pointer; }
-        .content-area { flex-grow: 1; padding: 20px; display: flex; flex-direction: column; overflow: hidden; }
-        .table-container { background: white; border-radius: 8px; border: 1px solid #ddd; flex-grow: 1; overflow-y: auto; }
+        .nav-links a { color: #bdc3c7; text-decoration: none; font-size: 0.9em; }
+
+        /* TABELLE */
+        .content-area {
+            flex-grow: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
         table { width: 100%; border-collapse: collapse; }
         th { position: sticky; top: 0; background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #ddd; z-index: 10; }
         td { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9em; }
+
         .row-storno { background-color: #ffcccc !important; color: #a00; }
         .row-is-storniert { color: #999; text-decoration: line-through; opacity: 0.6; }
+
         .btn-storno { color: #e74c3c; cursor: pointer; border: 1px solid #e74c3c; background: white; padding: 2px 5px; border-radius: 3px; }
-        
-        /* DEIN LIZENZ OVERLAY STYLE */
-        #licenseOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #2c3e50; z-index: 9999; display: flex; align-items: center; justify-content: center; color: white; flex-direction: column; text-align: center; padding: 20px; box-sizing: border-box; }
+
+        /* LIZENZ OVERLAY */
+        #licenseOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #2c3e50; z-index: 9999; display: flex; 
+            align-items: center; justify-content: center; color: white; flex-direction: column;
+            text-align: center; padding: 20px; box-sizing: border-box;
+        }
+
+        /* DEV MODAL */
         #devModal, #modalOverlay { display: none; }
         #devModal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; z-index: 1000; color: #333; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
         #modalOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 999; }
@@ -41,7 +125,7 @@
 <div id="licenseOverlay">
     <h1 style="color: #3498db;">SYSTEMPRÜFUNG</h1>
     <p id="licenseStatus">Bitte warten, Lizenz wird online geprüft...</p>
-    <div id="idDisplay" style="margin-top: 20px; font-family: monospace; background: #34495e; padding: 10px; border-radius: 5px; border: 1px solid #3498db;">ID-PK80TVXA4</div>
+    <div id="idDisplay" style="margin-top: 20px; font-family: monospace; background: #34495e; padding: 10px; border-radius: 5px; border: 1px solid #3498db;">Lade Hardware-ID...</div>
     <p style="font-size: 0.8em; color: #bdc3c7; margin-top: 30px;">Hinweis: Ohne Internetverbindung kann die App nicht gestartet werden.</p>
 </div>
 
@@ -99,6 +183,8 @@
         </div>
     </div>
 </div>
+
+<script>
 
 <script>
     // --- KOMMUNIKATION MIT C# (WICHTIG FÜR DIE CLOUD) ---
@@ -196,3 +282,4 @@
 </script>
 </body>
 </html>
+
