@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Html Rangliste - Version 1.4 (Cloud Sync)</title>
+    <title>Html Rangliste - Version 1.4</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background-color: #f0f2f5; }
         header { height: 120px; background: #ffffff; border-bottom: 2px solid #3498db; display: flex; flex-direction: column; padding: 10px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 100; }
@@ -70,12 +70,12 @@
         <div class="nav-links">
             <a onclick="navigate('wg.html')">⚙️ Fahrzeuge</a>
             <a onclick="navigate('ziele.html')">📍 Ziele</a>
-            <a onclick="requestDevAccess('clear')" style="color:#e74c3c; margin-top:10px;">🗑️ Alles löschen (Sperre)</a>
+            <a onclick="requestDevAccess('clear')" style="color:#e74c3c; margin-top:10px;">🗑️ Alles löschen</a>
         </div>
     </div>
 
     <div class="content-area">
-        <div class="table-container" id="scrollContainer">
+        <div class="table-container">
             <table id="fahrtenTable">
                 <thead>
                     <tr>
@@ -97,40 +97,45 @@
     let isDev = false;
     let pendingAction = null; 
 
-    // 1. Kommunikation mit C# (Nachrichten empfangen)
+    // 1. C# Kommunikation
     if (window.chrome && window.chrome.webview) {
         window.chrome.webview.addEventListener('message', event => {
-            const msg = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+            // Sicherstellen, dass wir ein Objekt haben
+            let msg = event.data;
+            if (typeof msg === 'string') {
+                try { msg = JSON.parse(msg); } catch(e) { return; }
+            }
             
             if (msg.type === "INIT_DATA") {
                 fahrzeuge = msg.fahrzeuge || [];
                 ziele = msg.ziele || [];
                 fahrten = msg.fahrten || [];
                 
-                // WICHTIG: Nach Erhalt der Daten alles aktualisieren
                 updateZielDatalist();
                 renderAll();
             }
         });
     }
 
-    // 2. Autovervollständigung Logik
+    // 2. Autovervollständigung fixieren
     function updateZielDatalist() {
         const dl = document.getElementById('zielOptionen');
         if (!dl) return;
-        // Füllt die Liste mit den Zielen aus der Cloud
-        dl.innerHTML = ziele.map(z => `<option value="${z.Name || z.z}">`).join('');
+        // Wir suchen nach 'z' (Zielname) aus deinem C# Model
+        dl.innerHTML = ziele.map(item => `<option value="${item.z || item.Name || ''}">`).join('');
     }
 
-    // Automatisches Ausfüllen des Preises bei Ziel-Auswahl
-    document.getElementById('zielInput').addEventListener('input', (e) => {
+    // Preis-Autofill
+    document.getElementById('zielInput').addEventListener('input', function(e) {
         const val = e.target.value;
-        const gefunden = ziele.find(z => (z.Name || z.z) === val);
-        if (gefunden) {
-            document.getElementById('betrag').value = gefunden.Preis || gefunden.p || "";
+        // Wir suchen das Ziel in der Liste und nehmen 'p' (Preis)
+        const match = ziele.find(item => (item.z || item.Name) === val);
+        if (match) {
+            document.getElementById('betrag').value = match.p || match.Preis || "";
         }
     });
 
+    // 3. Navigation & Rendering
     function renderAll() {
         renderFahrten();
         renderRangliste();
@@ -143,7 +148,7 @@
         tbody.innerHTML = displayList.map((f, i) => {
             let rowClass = f.type === 'storno' ? 'row-storno' : (f.isStorniert ? 'row-is-storniert' : '');
             let aktion = f.type === 'storno' ? 'Beleg' : (f.isStorniert ? 'Storniert' : `<button class="btn-storno" onclick="convertToStorno(${i})">Storno</button>`);
-            return `<tr class="${rowClass}"><td><b>${f.w}</b></td><td>${f.u}</td><td>${f.z}</td><td>${f.b.toFixed(2)} €</td><td style="color:#888">${f.t}</td><td style="color:#e74c3c; font-weight:bold;">${f.stornoDatum || '—'}</td><td>${aktion}</td></tr>`;
+            return `<tr class="${rowClass}"><td><b>${f.w}</b></td><td>${f.u}</td><td>${f.z}</td><td>${(f.b || 0).toFixed(2)} €</td><td style="color:#888">${f.t}</td><td style="color:#e74c3c; font-weight:bold;">${f.stornoDatum || '—'}</td><td>${aktion}</td></tr>`;
         }).join('');
     }
 
@@ -153,7 +158,7 @@
         const stats = {};
         const counts = {};
         fahrzeuge.forEach(f => counts[f.u] = (counts[f.u] || 0) + 1);
-        fahrten.forEach(f => stats[f.u] = (stats[f.u] || 0) + f.b);
+        fahrten.forEach(f => { if(!f.isStorniert) stats[f.u] = (stats[f.u] || 0) + f.b; });
         const rangData = Object.keys(counts).map(u => ({
             u, schnitt: (stats[u] || 0) / counts[u], wagen: counts[u]
         })).sort((a, b) => a.schnitt - b.schnitt);
