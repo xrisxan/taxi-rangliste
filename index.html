@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Html Rangliste Weite Fahrten - Version 1.4 (Newest Top)</title>
+    <title>Rangliste Weite Fahrten v3.0 - Enterprise</title>
     <style>
         body { 
             font-family: 'Segoe UI', sans-serif; 
@@ -106,37 +106,36 @@
 
         .btn-storno { color: #e74c3c; cursor: pointer; border: 1px solid #e74c3c; background: white; padding: 2px 5px; border-radius: 3px; }
 
-        /* DEV LOGIN MODAL */
-        #devModal {
-            display: none;
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            z-index: 1000;
-            color: #333;
+        /* LIZENZ OVERLAY */
+        #licenseOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #2c3e50; z-index: 9999; display: flex; 
+            align-items: center; justify-content: center; color: white; flex-direction: column;
+            text-align: center; padding: 20px; box-sizing: border-box;
         }
-        #modalOverlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
-            z-index: 999;
-        }
+
+        /* DEV MODAL */
+        #devModal, #modalOverlay { display: none; }
+        #devModal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; z-index: 1000; color: #333; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        #modalOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 999; }
     </style>
 </head>
 <body>
 
+<div id="licenseOverlay">
+    <h1 style="color: #3498db;">SYSTEMPRÜFUNG</h1>
+    <p id="licenseStatus">Bitte warten, Lizenz wird online geprüft...</p>
+    <div id="idDisplay" style="margin-top: 20px; font-family: monospace; background: #34495e; padding: 10px; border-radius: 5px; border: 1px solid #3498db;">Lade Hardware-ID...</div>
+    <p style="font-size: 0.8em; color: #bdc3c7; margin-top: 30px;">Hinweis: Ohne Internetverbindung kann die App nicht gestartet werden.</p>
+</div>
+
 <div id="modalOverlay"></div>
 <div id="devModal">
     <h3>Entwickler-Login</h3>
-    <p>Bitte Passwort eingeben:</p>
-    <input type="password" id="devPwInput" style="width:100%; padding:10px; margin-bottom:10px;">
+    <p>Passwort erforderlich:</p>
+    <input type="password" id="devPwInput" style="width:100%; padding:10px; margin-bottom:10px; border: 1px solid #ccc; border-radius: 4px;">
     <button onclick="confirmDevLogin()" class="btn-save">Anmelden</button>
-    <button onclick="closeDevModal()" style="margin-top:5px; background:none; border:none; color:gray; cursor:pointer; width:100%;">Abbrechen</button>
+    <button onclick="closeDevModal()" style="background:none; border:none; color:gray; cursor:pointer; width:100%; margin-top:5px;">Abbrechen</button>
 </div>
 
 <header>
@@ -172,7 +171,7 @@
     </div>
 
     <div class="content-area">
-        <div class="table-container" id="scrollContainer">
+        <div class="table-container">
             <table id="fahrtenTable">
                 <thead>
                     <tr>
@@ -186,66 +185,88 @@
 </div>
 
 <script>
-    // Passwort ist "1234" (als Base64 verschleiert)
-    const H_PW = "MTIzNA=="; 
+
+	// Fehler-Detektor für die EXE
+	window.onerror = function(msg, url, line) {
+		alert("Fehler gefunden: " + msg + "\nZeile: " + line);
+	};
+
+	// Prüfen ob wir im EXE Modus sind
+	if (window.location.protocol === 'file:') {
+		console.log("EXE Modus aktiv");
+	}
+
+    // --- LIZENZ & HARDWARE-ID ---
+    const GITHUB_URL = "https://raw.githubusercontent.com/xrisxan/taxi-rangliste/refs/heads/main/rangliste.txt";
+    const H_PW = "TVRBeU5RPT0="; // Beispiel Hash
     let isDev = false;
-    let pendingAction = null; 
+    let pendingAction = null;
 
-    const wNrInput = document.getElementById('wNr');
-    const zielInput = document.getElementById('zielInput');
-    const betragInput = document.getElementById('betrag');
+    function getHardwareId() {
+        try {
+            let id = localStorage.getItem('taxi_hwid');
+            if (!id) {
+                id = 'ID-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+                localStorage.setItem('taxi_hwid', id);
+            }
+            return id;
+        } catch (e) {
+            return "ERR-BLOCK-ID";
+        }
+    }
 
+	async function verifyLicense() {
+		const statusText = document.getElementById('licenseStatus');
+		const hardwareId = "ID-PK80TVXA4"; 
+
+		// Sicherheits-Timer: Wenn nach 8 Sekunden nichts passiert, Fehlermeldung zeigen
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+		try {
+			// Wir fügen einen Zeitstempel hinzu, um den Cache zu umgehen
+			const response = await fetch(GITHUB_URL + "?nocache=" + Date.now(), {
+				signal: controller.signal
+			});
+			
+			clearTimeout(timeoutId); // Timer stoppen, da Antwort kam
+
+			const text = await response.text();
+			if (text.includes(hardwareId)) {
+				document.getElementById('licenseOverlay').style.display = 'none';
+			} else {
+				statusText.innerHTML = "<span style='color:red'>Zugriff verweigert!</span><br>ID nicht in rangliste.txt gefunden.";
+			}
+		} catch (error) {
+			statusText.innerHTML = "Verbindungsfehler oder Zeitüberschreitung.<br>Bitte Internetverbindung prüfen.";
+			console.error("Lizenz-Fehler:", error);
+		}
+	}
+
+    // --- CORE DATEN LOGIK ---
     let fahrzeuge = JSON.parse(localStorage.getItem('wg_data') || '[]');
     let ziele = JSON.parse(localStorage.getItem('ziele_data') || '[]');
     let fahrten = JSON.parse(localStorage.getItem('fahrten_data') || '[]');
 
-    function requestDevAccess(actionType, index = null) {
-        if (isDev) { executeAction(actionType, index); return; }
-        pendingAction = { type: actionType, index: index };
-        document.getElementById('modalOverlay').style.display = 'block';
-        document.getElementById('devModal').style.display = 'block';
-        document.getElementById('devPwInput').focus();
+    function saveAndRefresh() {
+        localStorage.setItem('fahrten_data', JSON.stringify(fahrten));
+        renderAll();
     }
 
-    function confirmDevLogin() {
-        if (btoa(document.getElementById('devPwInput').value) === H_PW) {
-            isDev = true;
-            closeDevModal();
-            executeAction(pendingAction.type, pendingAction.index);
-        } else {
-            alert("Zugriff verweigert!");
-        }
-        document.getElementById('devPwInput').value = "";
+    function renderAll() {
+        renderFahrten();
+        renderRangliste();
     }
-
-    function closeDevModal() {
-        document.getElementById('modalOverlay').style.display = 'none';
-        document.getElementById('devModal').style.display = 'none';
-    }
-
-    function executeAction(type, index) {
-        // Da die Liste zum Rendern umgedreht wird, müssen wir den Index korrigieren
-        // Aber einfacher: Wir löschen über die eindeutige ID
-        if (type === 'delete') {
-            if (confirm("Diesen Eintrag permanent löschen?")) {
-                const realIndex = fahrten.length - 1 - index; // Korrektur wegen reverse()
-                fahrten.splice(realIndex, 1);
-                saveAndRefresh();
-            }
-        } else if (type === 'clear') {
-            if (confirm("ALLE DATEN LÖSCHEN?")) { fahrten = []; saveAndRefresh(); }
-        }
-    }
-
-    window.handleAdminContext = (e, index) => {
-        e.preventDefault();
-        requestDevAccess('delete', index);
-    };
 
     function updateZielDatalist() {
         const datalist = document.getElementById('zielOptionen');
         datalist.innerHTML = ziele.map(z => `<option value="${z.z}">`).join('');
     }
+
+    // --- FORMULAR LOGIK ---
+    const wNrInput = document.getElementById('wNr');
+    const zielInput = document.getElementById('zielInput');
+    const betragInput = document.getElementById('betrag');
 
     zielInput.addEventListener('input', () => {
         const ziel = ziele.find(z => z.z === zielInput.value);
@@ -283,11 +304,12 @@
         wNrInput.focus();
     };
 
+    // --- STORNO LOGIK ---
     window.convertToStorno = (index) => {
         const realIndex = fahrten.length - 1 - index;
         const f = fahrten[realIndex];
         if (f.isStorniert || f.type === "storno") return;
-        if (confirm(`Stornieren?`)) {
+        if (confirm(`Soll diese Fahrt wirklich storniert werden?`)) {
             f.isStorniert = true;
             fahrten.push({
                 id: Date.now(), w: f.w, u: f.u, z: "STORNO: " + f.z, b: -f.b,
@@ -297,11 +319,10 @@
         }
     };
 
+    // --- RENDERING ---
     function renderFahrten() {
         const tbody = document.querySelector('#fahrtenTable tbody');
-        // Kopie erstellen und umdrehen, damit das Original-Array für die IDs stabil bleibt
         const displayList = [...fahrten].reverse();
-        
         tbody.innerHTML = displayList.map((f, i) => {
             let rowClass = f.type === "storno" ? "row-storno" : (f.isStorniert ? "row-is-storniert" : "");
             let aktion = f.type === "storno" ? "Beleg" : (f.isStorniert ? "Storniert" : `<button class="btn-storno" onclick="convertToStorno(${i})">Storno</button>`);
@@ -319,19 +340,60 @@
         const rangData = Object.keys(counts).map(u => ({ u, schnitt: (stats[u] || 0) / counts[u], wagen: counts[u] })).sort((a,b) => a.schnitt - b.schnitt);
         document.getElementById('ranglisteBar').innerHTML = rangData.map((r, i) => `
             <div class="rangliste-item ${i === 0 && r.schnitt !== 0 ? 'low' : ''}">
-                <b>${r.u}</b><span>Ø ${r.schnitt.toFixed(2)} € (${r.wagen} Wagen)</span>
+                <b>${r.u}</b><span>Ø ${r.schnitt.toFixed(2)} € (${r.wagen} Wg)</span>
             </div>`).join('');
     }
 
-    function saveAndRefresh() {
-        localStorage.setItem('fahrten_data', JSON.stringify(fahrten));
-        renderAll();
+    // --- ADMIN FUNKTIONEN ---
+    function requestDevAccess(actionType, index = null) {
+        pendingAction = { type: actionType, index: index };
+        document.getElementById('modalOverlay').style.display = 'block';
+        document.getElementById('devModal').style.display = 'block';
+        document.getElementById('devPwInput').focus();
     }
 
-    function renderAll() { renderFahrten(); renderRangliste(); }
-    
-    updateZielDatalist();
-    renderAll();
+    function confirmDevLogin() {
+        // Simpler Passwort-Check
+        if (document.getElementById('devPwInput').value === "admin123") {
+            closeDevModal();
+            executeAction(pendingAction.type, pendingAction.index);
+        } else {
+            alert("Passwort falsch!");
+        }
+    }
+
+    function closeDevModal() {
+        document.getElementById('modalOverlay').style.display = 'none';
+        document.getElementById('devModal').style.display = 'none';
+    }
+
+    function executeAction(type, index) {
+        if (type === 'delete') {
+            const realIndex = fahrten.length - 1 - index;
+            fahrten.splice(realIndex, 1);
+            saveAndRefresh();
+        } else if (type === 'clear') {
+            if (confirm("Wirklich alles löschen?")) { fahrten = []; saveAndRefresh(); }
+        }
+    }
+
+    window.handleAdminContext = (e, index) => {
+        e.preventDefault();
+        requestDevAccess('delete', index);
+    };
+
+    // --- EXE-STABILER START ---
+    window.addEventListener('DOMContentLoaded', () => {
+        updateZielDatalist();
+        renderAll();
+        // Kurze Verzögerung für die EXE-Umgebung
+        setTimeout(verifyLicense, 0);
+    });
+
+    window.addEventListener('offline', () => { 
+        document.getElementById('licenseOverlay').style.display = 'flex'; 
+        document.getElementById('licenseStatus').innerText = "Internetverbindung verloren!"; 
+    });
 </script>
 </body>
 </html>
