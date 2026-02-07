@@ -1,252 +1,7 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
-<title>Taxi Rangliste – Unternehmer (Ø pro Wagen)</title>
-
-<style>
-body {
-    font-family: "Segoe UI", sans-serif;
-    margin: 0;
-    background: #f0f2f5;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-
-/* HEADER */
-header {
-    background: #ffffff;
-    border-bottom: 2px solid #3498db;
-    padding: 10px 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-header h2 {
-    margin: 0 0 6px 0;
-    font-size: 1.1em;
-}
-.rangliste-bar {
-    display: flex;
-    gap: 12px;
-    overflow-x: auto;
-}
-.rangliste-item {
-    background: #ecf0f1;
-    padding: 6px 12px;
-    border-radius: 6px;
-    border-left: 4px solid #3498db;
-    min-width: 180px;
-}
-.rangliste-item.low {
-    border-left-color: #e74c3c;
-    background: #fee;
-}
-
-/* MAIN */
-.main {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-}
-
-/* SIDEBAR */
-.sidebar {
-    width: 280px;
-    background: #2c3e50;
-    color: white;
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-}
-.sidebar h3 {
-    margin-top: 0;
-    border-bottom: 1px solid #555;
-    padding-bottom: 6px;
-}
-.input-group {
-    margin-bottom: 10px;
-}
-.input-group label {
-    font-size: 0.85em;
-    color: #bdc3c7;
-}
-.sidebar input {
-    width: 100%;
-    padding: 8px;
-    border: none;
-    border-radius: 4px;
-    background: #34495e;
-    color: white;
-}
-.btn {
-    background: #3498db;
-    border: none;
-    color: white;
-    padding: 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-}
-.nav {
-    margin-top: auto;
-    font-size: 0.9em;
-}
-.nav a {
-    color: #bdc3c7;
-    text-decoration: none;
-    display: block;
-    margin-top: 8px;
-}
-
-/* CONTENT */
-.content {
-    flex: 1;
-    padding: 15px;
-    overflow: hidden;
-}
-.table-box {
-    background: white;
-    border-radius: 6px;
-    border: 1px solid #ddd;
-    height: 100%;
-    overflow-y: auto;
-}
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-th {
-    position: sticky;
-    top: 0;
-    background: #f8f9fa;
-    border-bottom: 2px solid #ddd;
-    padding: 10px;
-}
-td {
-    padding: 8px;
-    border-bottom: 1px solid #eee;
-    font-size: 0.9em;
-}
-.row-storno {
-    background: #ffcccc;
-    color: #a00;
-}
-.row-is-storniert {
-    text-decoration: line-through;
-    opacity: 0.6;
-}
-.btn-storno {
-    border: 1px solid #e74c3c;
-    color: #e74c3c;
-    background: white;
-    padding: 2px 6px;
-    border-radius: 3px;
-    cursor: pointer;
-}
-
-/* DEV MODAL */
-#overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    display: none;
-}
-#devModal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    display: none;
-    width: 300px;
-}
-</style>
-</head>
-
-<body>
-
-<div id="overlay"></div>
-<div id="devModal">
-    <h3>Entwickler-Zugriff</h3>
-    <input type="password" id="devPw" placeholder="Passwort">
-    <button class="btn" onclick="confirmDev()">OK</button>
-</div>
-
-<header>
-    <h2>Taxi Rangliste – Ø Einnahmen pro Wagen</h2>
-    <div class="rangliste-bar" id="rangliste"></div>
-</header>
-
-<div class="main">
-    <div class="sidebar">
-        <h3>Fahrt erfassen</h3>
-
-        <div class="input-group">
-            <label>Wagen</label>
-            <input id="w" autofocus>
-        </div>
-
-        <div class="input-group">
-            <label>Ziel</label>
-            <input id="z">
-        </div>
-
-        <div class="input-group">
-            <label>Betrag (€)</label>
-            <input id="b" type="number" step="0.01">
-        </div>
-
-        <button class="btn" onclick="add()">Speichern</button>
-
-        <div class="nav">
-            <a href="#" onclick="requestDev('clear')">🗑️ Alles löschen</a>
-        </div>
-    </div>
-
-    <div class="content">
-        <div class="table-box">
-            <table>
-                <thead>
-                <tr>
-                    <th>Wagen</th>
-                    <th>Unternehmer</th>
-                    <th>Ziel</th>
-                    <th>Betrag</th>
-                    <th>Zeit</th>
-                    <th>Aktion</th>
-                </tr>
-                </thead>
-                <tbody id="tbody"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
 <script>
-/* ========= STORAGE ========= */
-
-function load(key, def) {
-    try {
-        const v = JSON.parse(localStorage.getItem(key));
-        return Array.isArray(def) ? (Array.isArray(v) ? v : def) : (v ?? def);
-    } catch { return def; }
-}
-function save(key, v) {
-    localStorage.setItem(key, JSON.stringify(v));
-}
-
-let fahrten = load("fahrten", []);
-let fahrzeuge = load("fahrzeuge", []);
-if (fahrzeuge.length === 0) {
-    fahrzeuge = [
-        { w: "101", u: "Unternehmer A" },
-        { w: "102", u: "Unternehmer A" },
-        { w: "201", u: "Unternehmer B" }
-    ];
-    save("fahrzeuge", fahrzeuge);
-}
+let fahrten = [];
+let fahrzeuge = [];
+let ziele = [];  // Ziele hinzufügen
 
 /* ========= DEV ========= */
 const DEV_PW = "1234";
@@ -268,11 +23,45 @@ function confirmDev() {
 }
 function exec(a) {
     if (a === "clear" && confirm("Alles löschen?")) {
-        fahrten = [];
-        save("fahrten", fahrten);
-        render();
+        // C#: clearAll
+        chrome.webview.postMessage({ type: "clearAll" });
     }
 }
+
+/* ========= C# <-> JS ========= */
+
+// Nachrichten von C# empfangen
+window.chrome.webview.addEventListener('message', event => {
+    const msg = event.data;
+    if (!msg || !msg.type) return;
+
+    switch (msg.type) {
+        case "initData":
+            fahrzeuge = msg.payload.fahrzeuge || [];
+            fahrten = msg.payload.fahrten || [];
+            ziele = msg.payload.ziele || [];  // Ziele speichern
+            render();
+            break;
+
+        case "fahrtenUpdated":
+            fahrten = msg.payload || [];
+            render();
+            break;
+
+        case "error":
+            alert(msg.payload || "Unbekannter Fehler");
+            break;
+    }
+});
+
+// Beim Eingeben des Ziels den Preis automatisch übernehmen
+document.getElementById('z').addEventListener('input', (e) => {
+    const zVal = e.target.value.trim();
+    const ziel = ziele.find(z => z.z.toLowerCase() === zVal.toLowerCase());
+    if (ziel) {
+        document.getElementById('b').value = ziel.p.toFixed(2);
+    }
+});
 
 /* ========= LOGIK ========= */
 
@@ -281,46 +70,41 @@ function add() {
     const zv = z.value.trim();
     const bv = parseFloat(b.value);
 
-    const map = fahrzeuge.find(x => x.w === wv);
-    if (!map) return alert("Unbekannter Wagen");
+    if (!wv) return alert("Wagen fehlt");
+    if (isNaN(bv)) return alert("Betrag ungültig");
 
-    fahrten.push({
-        w: wv,
-        u: map.u,
-        z: zv,
-        b: bv,
-        t: new Date().toLocaleString()
+    // Fahrt an C# schicken
+    chrome.webview.postMessage({
+        type: "saveFahrt",
+        payload: { w: wv, z: zv, b: bv }
     });
-    save("fahrten", fahrten);
+
     w.value = z.value = b.value = "";
-    render();
 }
 
 function render() {
-    tbody.innerHTML = [...fahrten].reverse().map((f,i)=>`
+    // Tabelle
+    tbody.innerHTML = [...fahrten].reverse().map(f => `
         <tr>
             <td>${f.w}</td>
             <td>${f.u}</td>
             <td>${f.z}</td>
-            <td>${f.b.toFixed(2)} €</td>
+            <td>${Number(f.b).toFixed(2)} €</td>
             <td>${f.t}</td>
             <td></td>
         </tr>`).join("");
 
+    // Rangliste
     const stats = {};
     const count = {};
-    fahrzeuge.forEach(f => count[f.u]=(count[f.u]||0)+1);
-    fahrten.forEach(f => stats[f.u]=(stats[f.u]||0)+f.b);
+    fahrzeuge.forEach(f => count[f.u] = (count[f.u] || 0) + 1);
+    fahrten.forEach(f => stats[f.u] = (stats[f.u] || 0) + Number(f.b));
 
-    rangliste.innerHTML = Object.keys(count).map(u=>{
-        const avg = (stats[u]||0)/count[u];
+    rangliste.innerHTML = Object.keys(count).map(u => {
+        const avg = (stats[u] || 0) / count[u];
         return `<div class="rangliste-item">
             <b>${u}</b><br>Ø ${avg.toFixed(2)} €
         </div>`;
     }).join("");
 }
-
-render();
 </script>
-</body>
-</html>
