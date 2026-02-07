@@ -1,34 +1,78 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Taxi Rangliste – Unternehmer (Ø pro Wagen)</title>
+
+<style>
+/* Dein bestehendes CSS bleibt hier */
+</style>
+</head>
+<body>
+
+<div id="overlay"></div>
+<div id="devModal">
+    <h3>Entwickler-Zugriff</h3>
+    <input type="password" id="devPw" placeholder="Passwort">
+    <button class="btn" onclick="confirmDev()">OK</button>
+</div>
+
+<header>
+    <h2>Taxi Rangliste – Ø Einnahmen pro Wagen</h2>
+    <div class="rangliste-bar" id="rangliste"></div>
+</header>
+
+<div class="main">
+    <div class="sidebar">
+        <h3>Fahrt erfassen</h3>
+
+        <div class="input-group">
+            <label>Wagen</label>
+            <input id="w" autofocus>
+        </div>
+
+        <div class="input-group">
+            <label>Ziel</label>
+            <input id="z">
+        </div>
+
+        <div class="input-group">
+            <label>Betrag (€)</label>
+            <input id="b" type="number" step="0.01">
+        </div>
+
+        <button class="btn" onclick="add()">Speichern</button>
+
+        <div class="nav">
+            <a href="zg.html" class="nav-link">🚗 Fahrzeuge</a>
+            <a href="ziele.html" class="nav-link">📍 Ziele</a>
+            <a href="#" onclick="requestDev('clear')">🗑️ Alles löschen</a>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="table-box">
+            <table>
+                <thead>
+                <tr>
+                    <th>Wagen</th>
+                    <th>Unternehmer</th>
+                    <th>Ziel</th>
+                    <th>Betrag</th>
+                    <th>Zeit</th>
+                    <th>Aktion</th>
+                </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <script>
 let fahrten = [];
 let fahrzeuge = [];
 let ziele = [];  // Ziele hinzufügen
-
-/* ========= DEV ========= */
-const DEV_PW = "1234";
-let dev = false;
-let pending = null;
-
-function requestDev(action) {
-    if (dev) return exec(action);
-    pending = action;
-    overlay.style.display = devModal.style.display = "block";
-}
-function confirmDev() {
-    if (devPw.value === DEV_PW) {
-        dev = true;
-        overlay.style.display = devModal.style.display = "none";
-        exec(pending);
-    } else alert("Falsch");
-    devPw.value = "";
-}
-function exec(a) {
-    if (a === "clear" && confirm("Alles löschen?")) {
-        // C#: clearAll
-        chrome.webview.postMessage({ type: "clearAll" });
-    }
-}
-
-/* ========= C# <-> JS ========= */
 
 // Nachrichten von C# empfangen
 window.chrome.webview.addEventListener('message', event => {
@@ -63,7 +107,7 @@ document.getElementById('z').addEventListener('input', (e) => {
     }
 });
 
-/* ========= LOGIK ========= */
+/* ========= Logik und Navigation ========= */
 
 function add() {
     const wv = w.value.trim();
@@ -73,7 +117,6 @@ function add() {
     if (!wv) return alert("Wagen fehlt");
     if (isNaN(bv)) return alert("Betrag ungültig");
 
-    // Fahrt an C# schicken
     chrome.webview.postMessage({
         type: "saveFahrt",
         payload: { w: wv, z: zv, b: bv }
@@ -82,8 +125,28 @@ function add() {
     w.value = z.value = b.value = "";
 }
 
+document.getElementById('w').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('z').focus();
+    }
+});
+
+document.getElementById('z').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('b').focus();
+    }
+});
+
+document.getElementById('b').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        add();
+    }
+});
+
 function render() {
-    // Tabelle
     tbody.innerHTML = [...fahrten].reverse().map(f => `
         <tr>
             <td>${f.w}</td>
@@ -94,7 +157,6 @@ function render() {
             <td></td>
         </tr>`).join("");
 
-    // Rangliste
     const stats = {};
     const count = {};
     fahrzeuge.forEach(f => count[f.u] = (count[f.u] || 0) + 1);
@@ -107,4 +169,10 @@ function render() {
         </div>`;
     }).join("");
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    chrome.webview.postMessage({ type: "init" });
+});
 </script>
+</body>
+</html>
