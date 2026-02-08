@@ -251,7 +251,11 @@ function confirmDev() {
 }
 function exec(a) {
     if (a === "clear" && confirm("Alles löschen?")) {
-        chrome.webview.postMessage({ type: "clearAll" });
+        if (window.chrome && window.chrome.webview) {
+            chrome.webview.postMessage({ type: "clearAll" });
+        } else {
+            alert("Nur in der Desktop-App löschbar.");
+        }
     }
 }
 
@@ -265,8 +269,8 @@ if (window.chrome && window.chrome.webview) {
         switch (msg.type) {
             case "initData":
                 fahrzeuge = msg.payload.fahrzeuge || [];
-                fahrten = msg.payload.fahrten || [];
-                ziele = msg.payload.ziele || [];
+                fahrten    = msg.payload.fahrten    || [];
+                ziele      = msg.payload.ziele      || [];
                 render();
                 break;
 
@@ -284,8 +288,6 @@ if (window.chrome && window.chrome.webview) {
     document.addEventListener('DOMContentLoaded', () => {
         chrome.webview.postMessage({ type: "init" });
     });
-} else {
-    // Fallback für normalen Browser: Demo-Daten / localStorage, falls gewünscht
 }
 
 /* ========= Eingabe-Logik ========= */
@@ -316,9 +318,12 @@ bInput.addEventListener('keydown', e => {
 // Autopreis aus Zieleliste
 zInput.addEventListener('input', e => {
     const zVal = e.target.value.trim();
-    const ziel = ziele.find(z => z.z.toLowerCase() === zVal.toLowerCase());
+    const ziel = ziele.find(z => (z.Z || z.z || "").toLowerCase() === zVal.toLowerCase());
     if (ziel) {
-        bInput.value = ziel.p.toFixed(2);
+        const preis = ziel.P != null ? ziel.P : ziel.p;
+        if (preis != null) {
+            bInput.value = Number(preis).toFixed(2);
+        }
     }
 });
 
@@ -339,39 +344,68 @@ function add() {
         alert("Nur in der Desktop-App speicherbar.");
     }
 
-    wInput.value = zInput.value = bInput.value = "";
+    wInput.value = "";
+    zInput.value = "";
+    bInput.value = "";
 }
 
 /* ========= Render ========= */
 
 function render() {
     const tbody = document.getElementById('tbody');
-    tbody.innerHTML = [...fahrten].reverse().map(f => `
-        <tr>
-            <td>${f.w}</td>
-            <td>${f.u}</td>
-            <td>${f.z}</td>
-            <td>${Number(f.b).toFixed(2)} €</td>
-            <td>${f.t}</td>
-            <td></td>
-        </tr>`).join('');
 
+    // C# liefert Properties W,U,Z,B,T (Groß); zur Sicherheit auch klein prüfen
+    tbody.innerHTML = [...fahrten].reverse().map(f => {
+        const w = f.W != null ? f.W : f.w;
+        const u = f.U != null ? f.U : f.u;
+        const z = f.Z != null ? f.Z : f.z;
+        const b = f.B != null ? f.B : f.b;
+        const t = f.T != null ? f.T : f.t;
+
+        const betragNum = Number(b);
+        const betragStr = isNaN(betragNum) ? "" : betragNum.toFixed(2) + " €";
+
+        return `<tr>
+            <td>${w != null ? w : ""}</td>
+            <td>${u != null ? u : ""}</td>
+            <td>${z != null ? z : ""}</td>
+            <td>${betragStr}</td>
+            <td>${t != null ? t : ""}</td>
+            <td></td>
+        </tr>`;
+    }).join("");
+
+    // Rangliste: ebenfalls auf Groß/Klein achten
     const stats = {};
     const count = {};
-    fahrzeuge.forEach(f => count[f.u] = (count[f.u] || 0) + 1);
-    fahrten.forEach(f => stats[f.u] = (stats[f.u] || 0) + Number(f.b));
 
-    const rangliste = document.getElementById('rangliste');
-    rangliste.innerHTML = Object.keys(count).map(u => {
+    fahrzeuge.forEach(f => {
+        const u = f.U != null ? f.U : f.u;
+        if (!u) return;
+        count[u] = (count[u] || 0) + 1;
+    });
+
+    fahrten.forEach(f => {
+        const u = f.U != null ? f.U : f.u;
+        const b = f.B != null ? f.B : f.b;
+        if (!u) return;
+        const num = Number(b);
+        if (isNaN(num)) return;
+        stats[u] = (stats[u] || 0) + num;
+    });
+
+    const ranglisteDiv = document.getElementById('rangliste');
+    ranglisteDiv.innerHTML = Object.keys(count).map(u => {
         const avg = (stats[u] || 0) / count[u];
         return `<div class="rangliste-item">
             <b>${u}</b><br>Ø ${avg.toFixed(2)} €
         </div>`;
-    }).join('');
+    }).join("");
 }
 </script>
 </body>
 </html>
+
 
 
 
