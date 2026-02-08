@@ -229,81 +229,123 @@ td {
 <script>
 let fahrten = [];
 let fahrzeuge = [];
-let ziele = [];  // Ziele hinzufügen
+let ziele = [];
 
-// Nachrichten von C# empfangen
-window.chrome.webview.addEventListener('message', event => {
-    const msg = event.data;
-    if (!msg || !msg.type) return;
+/* ========= DEV ========= */
+const DEV_PW = "1234";
+let dev = false;
+let pending = null;
 
-    switch (msg.type) {
-        case "initData":
-            fahrzeuge = msg.payload.fahrzeuge || [];
-            fahrten = msg.payload.fahrten || [];
-            ziele = msg.payload.ziele || [];  // Ziele speichern
-            render();
-            break;
-
-        case "fahrtenUpdated":
-            fahrten = msg.payload || [];
-            render();
-            break;
-
-        case "error":
-            alert(msg.payload || "Unbekannter Fehler");
-            break;
+function requestDev(action) {
+    if (dev) return exec(action);
+    pending = action;
+    overlay.style.display = devModal.style.display = "block";
+}
+function confirmDev() {
+    if (devPw.value === DEV_PW) {
+        dev = true;
+        overlay.style.display = devModal.style.display = "none";
+        exec(pending);
+    } else alert("Falsch");
+    devPw.value = "";
+}
+function exec(a) {
+    if (a === "clear" && confirm("Alles löschen?")) {
+        chrome.webview.postMessage({ type: "clearAll" });
     }
-});
-
-// Beim Eingeben des Ziels den Preis automatisch übernehmen
-document.getElementById('z').addEventListener('input', (e) => {
-    const zVal = e.target.value.trim();
-    const ziel = ziele.find(z => z.z.toLowerCase() === zVal.toLowerCase());
-    if (ziel) {
-        document.getElementById('b').value = ziel.p.toFixed(2);
-    }
-});
-
-/* ========= Logik und Navigation ========= */
-
-function add() {
-    const wv = w.value.trim();
-    const zv = z.value.trim();
-    const bv = parseFloat(b.value);
-
-    if (!wv) return alert("Wagen fehlt");
-    if (isNaN(bv)) return alert("Betrag ungültig");
-
-    chrome.webview.postMessage({
-        type: "saveFahrt",
-        payload: { w: wv, z: zv, b: bv }
-    });
-
-    w.value = z.value = b.value = "";
 }
 
-document.getElementById('w').addEventListener('keydown', (e) => {
+/* ========= C# <-> JS ========= */
+
+if (window.chrome && window.chrome.webview) {
+    window.chrome.webview.addEventListener('message', event => {
+        const msg = event.data;
+        if (!msg || !msg.type) return;
+
+        switch (msg.type) {
+            case "initData":
+                fahrzeuge = msg.payload.fahrzeuge || [];
+                fahrten = msg.payload.fahrten || [];
+                ziele = msg.payload.ziele || [];
+                render();
+                break;
+
+            case "fahrtenUpdated":
+                fahrten = msg.payload || [];
+                render();
+                break;
+
+            case "error":
+                alert(msg.payload || "Unbekannter Fehler");
+                break;
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        chrome.webview.postMessage({ type: "init" });
+    });
+} else {
+    // Fallback für normalen Browser: Demo-Daten / localStorage, falls gewünscht
+}
+
+/* ========= Eingabe-Logik ========= */
+
+const wInput = document.getElementById('w');
+const zInput = document.getElementById('z');
+const bInput = document.getElementById('b');
+
+wInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
         e.preventDefault();
-        document.getElementById('z').focus();
+        zInput.focus();
     }
 });
-
-document.getElementById('z').addEventListener('keydown', (e) => {
+zInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
         e.preventDefault();
-        document.getElementById('b').focus();
+        bInput.focus();
     }
 });
-
-document.getElementById('b').addEventListener('keydown', (e) => {
+bInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
         e.preventDefault();
         add();
     }
 });
 
+// Autopreis aus Zieleliste
+zInput.addEventListener('input', e => {
+    const zVal = e.target.value.trim();
+    const ziel = ziele.find(z => z.z.toLowerCase() === zVal.toLowerCase());
+    if (ziel) {
+        bInput.value = ziel.p.toFixed(2);
+    }
+});
+
+function add() {
+    const wv = wInput.value.trim();
+    const zv = zInput.value.trim();
+    const bv = parseFloat(bInput.value.replace(',', '.'));
+
+    if (!wv) return alert("Wagen fehlt");
+    if (isNaN(bv)) return alert("Betrag ungültig");
+
+    if (window.chrome && window.chrome.webview) {
+        chrome.webview.postMessage({
+            type: "saveFahrt",
+            payload: { w: wv, z: zv, b: bv }
+        });
+    } else {
+        alert("Nur in der Desktop-App speicherbar.");
+    }
+
+    wInput.value = zInput.value = bInput.value = "";
+}
+
+/* ========= Render ========= */
+
 function render() {
+    const tbody = document.getElementById('tbody');
     tbody.innerHTML = [...fahrten].reverse().map(f => `
         <tr>
             <td>${f.w}</td>
@@ -312,27 +354,25 @@ function render() {
             <td>${Number(f.b).toFixed(2)} €</td>
             <td>${f.t}</td>
             <td></td>
-        </tr>`).join("");
+        </tr>`).join('');
 
     const stats = {};
     const count = {};
     fahrzeuge.forEach(f => count[f.u] = (count[f.u] || 0) + 1);
     fahrten.forEach(f => stats[f.u] = (stats[f.u] || 0) + Number(f.b));
 
+    const rangliste = document.getElementById('rangliste');
     rangliste.innerHTML = Object.keys(count).map(u => {
         const avg = (stats[u] || 0) / count[u];
         return `<div class="rangliste-item">
             <b>${u}</b><br>Ø ${avg.toFixed(2)} €
         </div>`;
-    }).join("");
+    }).join('');
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    chrome.webview.postMessage({ type: "init" });
-});
 </script>
 </body>
 </html>
+
 
 
 
