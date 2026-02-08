@@ -268,17 +268,19 @@ if (window.chrome && window.chrome.webview) {
 
         switch (msg.type) {
             case "initData":
+                console.log("INITDATA_FAHRTEN", msg.payload.fahrten); // <<< Diagnose
                 fahrzeuge = msg.payload.fahrzeuge || [];
                 fahrten    = msg.payload.fahrten    || [];
                 ziele      = msg.payload.ziele      || [];
                 render();
                 break;
-
+        
             case "fahrtenUpdated":
+                console.log("UPDATED_FAHRTEN", msg.payload); // <<< Diagnose
                 fahrten = msg.payload || [];
                 render();
                 break;
-
+        
             case "error":
                 alert(msg.payload || "Unbekannter Fehler");
                 break;
@@ -405,6 +407,7 @@ function render() {
 </script>
 </body>
 </html>
+
 
 
 
