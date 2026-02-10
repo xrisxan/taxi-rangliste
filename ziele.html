@@ -182,18 +182,8 @@
     const zPreisInput = document.getElementById('zPreis');
     const scrollContainer = document.getElementById('scrollContainer');
 
-    // Daten laden
-    let ziele = JSON.parse(localStorage.getItem('ziele_data') || '[]');
-    let editOldOrt = null; // Speicher für Korrektur-Modus
-
-    // Funktionen
-    function loadZiel(index) {
-        const item = ziele[index];
-        zOrtInput.value = item.z;
-        zPreisInput.value = item.p;
-        editOldOrt = item.z; // Alten Namen merken
-        zOrtInput.select(); // Zielort zum schnellen Ändern markieren
-    }
+    let ziele = [];      // { Z, P } aus C#
+    let editOldOrt = null;
 
     function scrollToBottom() {
         setTimeout(() => {
@@ -201,9 +191,22 @@
         }, 50);
     }
 
+    function loadZiel(index) {
+        const item = ziele[index];
+        if (!item) return;
+
+        const z = item.Z != null ? item.Z : item.z;
+        const p = item.P != null ? item.P : item.p;
+
+        zOrtInput.value = z;
+        zPreisInput.value = (p != null ? Number(p).toFixed(2) : "");
+        editOldOrt = z;
+        zOrtInput.select();
+    }
+
     // Speichern beim Verlassen (Blur)
     zPreisInput.addEventListener('blur', () => {
-        if(zOrtInput.value.trim() !== "" && zPreisInput.value.trim() !== "") {
+        if (zOrtInput.value.trim() !== "" && zPreisInput.value.trim() !== "") {
             saveZiel();
         }
     });
@@ -226,53 +229,80 @@
 
     function saveZiel() {
         const z = zOrtInput.value.trim();
-        const p = parseFloat(zPreisInput.value);
+        const p = parseFloat(zPreisInput.value.replace(',', '.'));
 
-        if(z && !isNaN(p)) {
-            // Suchen ob wir editieren (über alten Namen) oder neu anlegen
-            const index = ziele.findIndex(item => item.z === (editOldOrt || z));
-            
-            if(index > -1) {
-                // Update
-                ziele[index] = { z, p };
-            } else {
-                // Neu
-                ziele.push({ z, p });
-            }
+        if (!z || isNaN(p)) return;
 
-            localStorage.setItem('ziele_data', JSON.stringify(ziele));
-            renderTable();
-
-            // Felder leeren nach Übernahme
-            zOrtInput.value = '';
-            zPreisInput.value = '';
-            editOldOrt = null; 
-            scrollToBottom();
+        if (window.chrome && window.chrome.webview) {
+            chrome.webview.postMessage({
+                type: "saveZiel",
+                payload: { z: z, p: p, oldZ: editOldOrt }
+            });
+        } else {
+            alert("Speichern nur in der Desktop-App möglich.");
         }
+
+        zOrtInput.value = '';
+        zPreisInput.value = '';
+        editOldOrt = null;
     }
 
     function renderTable() {
         const tbody = document.querySelector('#zielTable tbody');
-        tbody.innerHTML = ziele.map((item, i) => `
+        tbody.innerHTML = ziele.map((item, i) => {
+            const z = item.Z != null ? item.Z : item.z;
+            const p = item.P != null ? item.P : item.p;
+            return `
             <tr onclick="loadZiel(${i})">
-                <td><strong>${item.z}</strong></td>
-                <td>${item.p.toFixed(2)} €</td>
-                <td><button class="btn-del" onclick="event.stopPropagation(); deleteZiel(${i})">Löschen</button></td>
-            </tr>
-        `).join('');
+                <td><strong>${z}</strong></td>
+                <td>${Number(p).toFixed(2)} €</td>
+                <td>
+                    <button class="btn-del"
+                        onclick="event.stopPropagation(); deleteZiel('${z}')">
+                        Löschen
+                    </button>
+                </td>
+            </tr>`;
+        }).join('');
+        scrollToBottom();
     }
 
-    window.deleteZiel = function(i) {
-        if(confirm("Dieses Ziel wirklich löschen?")) {
-            ziele.splice(i, 1);
-            localStorage.setItem('ziele_data', JSON.stringify(ziele));
-            renderTable();
+    function deleteZiel(zName) {
+        if (!confirm("Dieses Ziel wirklich löschen?")) return;
+
+        if (window.chrome && window.chrome.webview) {
+            chrome.webview.postMessage({
+                type: "deleteZiel",
+                payload: { z: zName }
+            });
+        } else {
+            alert("Löschen nur in der Desktop-App möglich.");
         }
     }
 
-    // Start
-    renderTable();
-    scrollToBottom();
+    // Nachrichten von C# empfangen
+    if (window.chrome && window.chrome.webview) {
+        window.chrome.webview.addEventListener('message', event => {
+            const msg = event.data;
+            if (!msg || !msg.type) return;
+
+            switch (msg.type) {
+                case "zieleLoaded":
+                    ziele = msg.payload || [];
+                    renderTable();
+                    break;
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            chrome.webview.postMessage({ type: "loadZiele" });
+        });
+    }
+
+    // globale Funktionen für onclick
+    window.loadZiel = loadZiel;
+    window.deleteZiel = deleteZiel;
 </script>
 </body>
+
 </html>
