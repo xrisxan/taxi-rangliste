@@ -1,206 +1,10 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <title>Fahrzeugverwaltung - Html Rangliste</title>
-    <style>
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0; 
-            display: flex; 
-            height: 100vh; 
-            overflow: hidden; 
-            background-color: #f0f2f5;
-        }
-
-        .sidebar {
-            width: 350px;
-            background-color: #2c3e50;
-            color: white;
-            padding: 25px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 4px 0 15px rgba(0,0,0,0.3);
-            z-index: 20;
-        }
-
-        .sidebar h2 { 
-            font-size: 1.4em; 
-            margin-bottom: 25px; 
-            border-bottom: 2px solid #3498db; 
-            padding-bottom: 10px;
-            color: #ecf0f1;
-        }
-        
-        .input-group { margin-bottom: 20px; }
-        .input-group label { 
-            display: block; 
-            margin-bottom: 8px; 
-            font-size: 0.95em; 
-            color: #bdc3c7; 
-        }
-        
-        .sidebar input { 
-            width: 100%; 
-            padding: 12px; 
-            border: 1px solid #455a64; 
-            border-radius: 6px; 
-            box-sizing: border-box;
-            background: #34495e;
-            color: white;
-            font-size: 1.1em;
-            transition: all 0.3s;
-        }
-
-        .sidebar input:focus { 
-            outline: none; 
-            border-color: #3498db; 
-            background: #3d566e;
-            box-shadow: 0 0 8px rgba(52, 152, 219, 0.5);
-        }
-
-        .info-box {
-            font-size: 0.85em;
-            color: #ecf0f1;
-            margin-top: 20px;
-            background: rgba(52, 152, 219, 0.2);
-            padding: 15px;
-            border-radius: 8px;
-            line-height: 1.5;
-            border-left: 4px solid #3498db;
-        }
-
-        .nav-link { 
-            margin-top: auto; 
-            text-decoration: none; 
-            color: #3498db; 
-            font-weight: bold;
-            font-size: 1em; 
-            padding: 15px;
-            text-align: center;
-            border: 2px solid #3498db;
-            border-radius: 6px;
-            transition: all 0.3s;
-        }
-        
-        .nav-link:hover {
-            background: #3498db;
-            color: white;
-        }
-
-        .main-content {
-            flex-grow: 1;
-            padding: 30px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .list-container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            flex-grow: 1;
-            overflow-y: auto;
-            border: 1px solid #e0e0e0;
-        }
-
-        table { width: 100%; border-collapse: collapse; }
-        th { 
-            position: sticky; 
-            top: 0; 
-            background: #f8f9fa; 
-            padding: 15px; 
-            text-align: left; 
-            border-bottom: 3px solid #dee2e6;
-            color: #2c3e50;
-            z-index: 10;
-            font-weight: 600;
-        }
-        td { 
-            padding: 12px 15px; 
-            border-bottom: 1px solid #eee; 
-            cursor: pointer;
-            font-size: 1.05em;
-        }
-        tr:hover { background-color: #f1f7ff; }
-        
-        .btn-del { 
-            color: #e74c3c; 
-            cursor: pointer; 
-            border: 1px solid #e74c3c; 
-            background: transparent; 
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 0.85em;
-            transition: all 0.2s;
-        }
-        .btn-del:hover { background: #e74c3c; color: white; }
-    </style>
-</head>
-<body>
-
-<div class="sidebar">
-    <h2>Fahrzeugverwaltung</h2>
-    <div class="input-group">
-        <label>Wagen Nr.</label>
-        <input type="text" id="wNr" placeholder="z.B. 101" autofocus>
-    </div>
-    <div class="input-group">
-        <label>Unternehmer Name</label>
-        <input type="text" id="uName" placeholder="Name des Inhabers">
-    </div>
-
-    <div class="info-box">
-        <strong>Bedienung:</strong><br>
-        1. Zeile in der Liste anklicken.<br>
-        2. Wagen Nr. wird sofort markiert.<br>
-        3. Änderung vornehmen.<br>
-        4. Nach Verlassen des Namensfeldes (oder Enter) wird gespeichert und die Felder geleert.<br>
-        <br>
-        <em>Die Liste scrollt automatisch zum neuesten Eintrag.</em>
-    </div>
-    
-    <a href="index.html" class="nav-link">🏠 Zurück zur Rangliste</a>
-</div>
-
-<div class="main-content">
-    <div class="list-container" id="scrollContainer">
-        <table id="wgTable">
-            <thead>
-                <tr>
-                    <th>Wagen Nr.</th>
-                    <th>Unternehmer</th>
-                    <th>Verwaltung</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
-</div>
-
 <script>
     const wNrInput = document.getElementById('wNr');
     const uNameInput = document.getElementById('uName');
     const scrollContainer = document.getElementById('scrollContainer');
 
-    // Daten laden
-    let fahrzeuge = JSON.parse(localStorage.getItem('wg_data') || '[]');
-    let editOldWNr = null; // Speicher für Korrektur-Modus
-
-    // Presets (Holidays logic falls später für Berechnungen nötig, hier als Platzhalter für Vollständigkeit)
-    const holidays = [
-        "2025-01-01", "2025-04-18", "2025-04-21", "2025-05-01", 
-        "2025-05-29", "2025-06-09", "2025-10-03", "2025-12-25", "2025-12-26"
-    ];
-
-    function loadEntry(index) {
-        const item = fahrzeuge[index];
-        wNrInput.value = item.w;
-        uNameInput.value = item.u;
-        editOldWNr = item.w; // Wir merken uns den Schlüssel zum Ändern
-        wNrInput.select(); // Wagen Nr. als erstes markieren
-    }
+    let fahrzeuge = [];      // { W, U } aus C#
+    let editOldWNr = null;   // alte Wagennummer beim Bearbeiten
 
     function scrollToBottom() {
         setTimeout(() => {
@@ -208,9 +12,22 @@
         }, 50);
     }
 
-    // Speichern beim Verlassen des zweiten Feldes
+    function loadEntry(index) {
+        const item = fahrzeuge[index];
+        if (!item) return;
+
+        const w = item.W != null ? item.W : item.w;
+        const u = item.U != null ? item.U : item.u;
+
+        wNrInput.value = w;
+        uNameInput.value = u;
+        editOldWNr = w;
+        wNrInput.select();
+    }
+
+    // Speichern beim Verlassen des Namensfeldes
     uNameInput.addEventListener('blur', () => {
-        if(uNameInput.value.trim() !== "" && wNrInput.value.trim() !== "") {
+        if (uNameInput.value.trim() !== "" && wNrInput.value.trim() !== "") {
             saveEntry();
         }
     });
@@ -227,7 +44,7 @@
         if (e.key === 'Enter') {
             e.preventDefault();
             saveEntry();
-            wNrInput.focus(); // Zurück zum Start für neue Eingabe
+            wNrInput.focus();
         }
     });
 
@@ -235,54 +52,75 @@
         const w = wNrInput.value.trim();
         const u = uNameInput.value.trim();
 
-        if(w && u) {
-            // Suchen ob wir editieren oder neu anlegen
-            const index = fahrzeuge.findIndex(item => item.w === (editOldWNr || w));
-            
-            if(index > -1) {
-                // Vorhandenen Eintrag überschreiben
-                fahrzeuge[index] = { w, u };
-            } else {
-                // Neuen Eintrag hinzufügen
-                fahrzeuge.push({ w, u });
-            }
+        if (!w || !u) return;
 
-            // Sortierung nach Wagen Nummer (optional, falls gewünscht)
-            // fahrzeuge.sort((a, b) => a.w.localeCompare(b.w, undefined, {numeric: true}));
-
-            localStorage.setItem('wg_data', JSON.stringify(fahrzeuge));
-            renderTable();
-            
-            // Felder leeren nach Übernahme
-            wNrInput.value = '';
-            uNameInput.value = '';
-            editOldWNr = null; // Reset Korrektur-Modus
-            scrollToBottom();
+        if (window.chrome && window.chrome.webview) {
+            chrome.webview.postMessage({
+                type: "saveFahrzeug",
+                payload: { w: w, u: u, oldW: editOldWNr }
+            });
+        } else {
+            alert("Speichern nur in der Desktop-App möglich.");
         }
+
+        wNrInput.value = "";
+        uNameInput.value = "";
+        editOldWNr = null;
     }
 
     function renderTable() {
         const tbody = document.querySelector('#wgTable tbody');
-        tbody.innerHTML = fahrzeuge.map((f, i) => `
+        tbody.innerHTML = fahrzeuge.map((f, i) => {
+            const w = f.W != null ? f.W : f.w;
+            const u = f.U != null ? f.U : f.u;
+            return `
             <tr onclick="loadEntry(${i})">
-                <td><strong>${f.w}</strong></td>
-                <td>${f.u}</td>
-                <td><button class="btn-del" onclick="event.stopPropagation(); deleteEntry(${i})">Löschen</button></td>
-            </tr>
-        `).join('');
+                <td><strong>${w}</strong></td>
+                <td>${u}</td>
+                <td>
+                    <button class="btn-del"
+                        onclick="event.stopPropagation(); deleteEntry('${w}')">
+                        Löschen
+                    </button>
+                </td>
+            </tr>`;
+        }).join('');
+        scrollToBottom();
     }
 
-    window.deleteEntry = function(i) {
-        if(confirm("Soll dieses Fahrzeug wirklich dauerhaft gelöscht werden?")) {
-            fahrzeuge.splice(i, 1);
-            localStorage.setItem('wg_data', JSON.stringify(fahrzeuge));
-            renderTable();
+    function deleteEntry(wagenNr) {
+        if (!confirm("Soll dieses Fahrzeug wirklich dauerhaft gelöscht werden?")) return;
+
+        if (window.chrome && window.chrome.webview) {
+            chrome.webview.postMessage({
+                type: "deleteFahrzeug",
+                payload: { w: wagenNr }
+            });
+        } else {
+            alert("Löschen nur in der Desktop-App möglich.");
         }
     }
 
-    // Initiales Rendern
-    renderTable();
-    scrollToBottom();
+    // Nachrichten von C# empfangen
+    if (window.chrome && window.chrome.webview) {
+        window.chrome.webview.addEventListener('message', event => {
+            const msg = event.data;
+            if (!msg || !msg.type) return;
+
+            switch (msg.type) {
+                case "fahrzeugeLoaded":
+                    fahrzeuge = msg.payload || [];
+                    renderTable();
+                    break;
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            chrome.webview.postMessage({ type: "loadFahrzeuge" });
+        });
+    }
+
+    // globale Funktionen für onclick
+    window.loadEntry = loadEntry;
+    window.deleteEntry = deleteEntry;
 </script>
-</body>
-</html>
