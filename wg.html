@@ -1,3 +1,184 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Fahrzeugverwaltung - Html Rangliste</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+            background-color: #f0f2f5;
+        }
+
+        .sidebar {
+            width: 350px;
+            background-color: #2c3e50;
+            color: white;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+            z-index: 20;
+        }
+
+        .sidebar h2 { 
+            font-size: 1.4em; 
+            margin-bottom: 25px; 
+            border-bottom: 2px solid #3498db; 
+            padding-bottom: 10px;
+            color: #ecf0f1;
+        }
+        
+        .input-group { margin-bottom: 20px; }
+        .input-group label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-size: 0.95em; 
+            color: #bdc3c7; 
+        }
+        
+        .sidebar input { 
+            width: 100%; 
+            padding: 12px; 
+            border: 1px solid #455a64; 
+            border-radius: 6px; 
+            box-sizing: border-box;
+            background: #34495e;
+            color: white;
+            font-size: 1.1em;
+            transition: all 0.3s;
+        }
+
+        .sidebar input:focus { 
+            outline: none; 
+            border-color: #3498db; 
+            background: #3d566e;
+            box-shadow: 0 0 8px rgba(52, 152, 219, 0.5);
+        }
+
+        .info-box {
+            font-size: 0.85em;
+            color: #ecf0f1;
+            margin-top: 20px;
+            background: rgba(52, 152, 219, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            line-height: 1.5;
+            border-left: 4px solid #3498db;
+        }
+
+        .nav-link { 
+            margin-top: auto; 
+            text-decoration: none; 
+            color: #3498db; 
+            font-weight: bold;
+            font-size: 1em; 
+            padding: 15px;
+            text-align: center;
+            border: 2px solid #3498db;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+        
+        .nav-link:hover {
+            background: #3498db;
+            color: white;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .list-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { 
+            position: sticky; 
+            top: 0; 
+            background: #f8f9fa; 
+            padding: 15px; 
+            text-align: left; 
+            border-bottom: 3px solid #dee2e6;
+            color: #2c3e50;
+            z-index: 10;
+            font-weight: 600;
+        }
+        td { 
+            padding: 12px 15px; 
+            border-bottom: 1px solid #eee; 
+            cursor: pointer;
+            font-size: 1.05em;
+        }
+        tr:hover { background-color: #f1f7ff; }
+        
+        .btn-del { 
+            color: #e74c3c; 
+            cursor: pointer; 
+            border: 1px solid #e74c3c; 
+            background: transparent; 
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+        .btn-del:hover { background: #e74c3c; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>Fahrzeugverwaltung</h2>
+    <div class="input-group">
+        <label>Wagen Nr.</label>
+        <input type="text" id="wNr" placeholder="z.B. 101" autofocus>
+    </div>
+    <div class="input-group">
+        <label>Unternehmer Name</label>
+        <input type="text" id="uName" placeholder="Name des Inhabers">
+    </div>
+
+    <div class="info-box">
+        <strong>Bedienung:</strong><br>
+        1. Zeile in der Liste anklicken.<br>
+        2. Wagen Nr. wird sofort markiert.<br>
+        3. Änderung vornehmen.<br>
+        4. Nach Verlassen des Namensfeldes (oder Enter) wird gespeichert und die Felder geleert.<br>
+        <br>
+        <em>Die Liste scrollt automatisch zum neuesten Eintrag.</em>
+    </div>
+    
+    <a href="index.html" class="nav-link">🏠 Zurück zur Rangliste</a>
+</div>
+
+<div class="main-content">
+    <div class="list-container" id="scrollContainer">
+        <table id="wgTable">
+            <thead>
+                <tr>
+                    <th>Wagen Nr.</th>
+                    <th>Unternehmer</th>
+                    <th>Verwaltung</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
 <script>
     const wNrInput = document.getElementById('wNr');
     const uNameInput = document.getElementById('uName');
@@ -124,3 +305,5 @@
     window.loadEntry = loadEntry;
     window.deleteEntry = deleteEntry;
 </script>
+</body>
+</html>
