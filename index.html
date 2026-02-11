@@ -232,15 +232,6 @@ let fahrten = [];
 let fahrzeuge = [];
 let ziele = [];
 
-function updateZielListe() {
-    const dl = document.getElementById('zielListe');
-    if (!dl) return;
-    dl.innerHTML = ziele.map(item => {
-        const name = item.Z != null ? item.Z : item.z;
-        return `<option value="${name}"></option>`;
-    }).join('');
-}
-
 /* ========= DEV ========= */
 const DEV_PW = "1234";
 let dev = false;
@@ -269,43 +260,26 @@ function exec(a) {
     }
 }
 
-/* ========= C# <-> JS ========= */
+/* ========= ZIEL-DATALIST ========= */
 
-if (window.chrome && window.chrome.webview) {
-    window.chrome.webview.addEventListener('message', event => {
-        const msg = event.data;
-        if (!msg || !msg.type) return;
-
-            case "initData":
-                fahrzeuge = msg.payload.fahrzeuge || [];
-                fahrten   = msg.payload.fahrten   || [];
-                ziele     = msg.payload.ziele     || [];
-                updateZielListe();
-                render();
-                break;
-        
-            case "fahrtenUpdated":
-                console.log("UPDATED_FAHRTEN", msg.payload); // <<< Diagnose
-                fahrten = msg.payload || [];
-                render();
-                break;
-        
-            case "error":
-                alert(msg.payload || "Unbekannter Fehler");
-                break;
-        }
-    });
-
-    document.addEventListener('DOMContentLoaded', () => {
-        chrome.webview.postMessage({ type: "init" });
-    });
+function updateZielListe() {
+    const dl = document.getElementById('zielListe');
+    if (!dl) return;
+    dl.innerHTML = ziele.map(item => {
+        const name = item.Z != null ? item.Z : item.z;
+        return `<option value="${name}"></option>`;
+    }).join('');
 }
 
-/* ========= Eingabe-Logik ========= */
+/* ========= Eingabe-Elemente ========= */
 
 const wInput = document.getElementById('w');
 const zInput = document.getElementById('z');
 const bInput = document.getElementById('b');
+const tbody  = document.getElementById('tbody');
+const ranglisteDiv = document.getElementById('rangliste');
+
+/* ========= ENTER-NAVIGATION ========= */
 
 wInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
@@ -326,10 +300,14 @@ bInput.addEventListener('keydown', e => {
     }
 });
 
-// Autopreis aus Zieleliste
+/* ========= Autopreis aus Zieleliste ========= */
+
 zInput.addEventListener('input', e => {
     const zVal = e.target.value.trim();
-    const ziel = ziele.find(z => (z.Z || z.z || "").toLowerCase() === zVal.toLowerCase());
+    const ziel = ziele.find(z => {
+        const name = (z.Z != null ? z.Z : z.z) || "";
+        return name.toLowerCase() === zVal.toLowerCase();
+    });
     if (ziel) {
         const preis = ziel.P != null ? ziel.P : ziel.p;
         if (preis != null) {
@@ -337,6 +315,57 @@ zInput.addEventListener('input', e => {
         }
     }
 });
+
+/* ========= C# <-> JS ========= */
+
+// damit wir Handler nicht doppelt registrieren:
+let webviewListenerRegistered = false;
+
+function registerWebViewListener() {
+    if (!window.chrome || !window.chrome.webview) return;
+    if (webviewListenerRegistered) return;
+
+    window.chrome.webview.addEventListener('message', event => {
+        const msg = event.data;
+        if (!msg || !msg.type) return;
+
+        switch (msg.type) {
+            case "initData":
+                fahrzeuge = msg.payload.fahrzeuge || [];
+                fahrten   = msg.payload.fahrten   || [];
+                ziele     = msg.payload.ziele     || [];
+                updateZielListe();
+                render();
+                break;
+
+            case "fahrtenUpdated":
+                fahrten = msg.payload || [];
+                render();
+                break;
+
+            case "error":
+                alert(msg.payload || "Unbekannter Fehler");
+                break;
+        }
+    });
+
+    // beim ersten Laden und auch nach Zurückkehren immer init anfordern
+    sendInitToHost();
+
+    webviewListenerRegistered = true;
+}
+
+function sendInitToHost() {
+    if (window.chrome && window.chrome.webview) {
+        try {
+            chrome.webview.postMessage({ type: "init" });
+        } catch (e) {
+            console.log("init postMessage fehlgeschlagen:", e);
+        }
+    }
+}
+
+/* ========= add() inkl. neues Ziel speichern ========= */
 
 function add() {
     const wv = wInput.value.trim();
@@ -346,7 +375,7 @@ function add() {
     if (!wv) return alert("Wagen fehlt");
     if (isNaN(bv)) return alert("Betrag ungültig");
 
-    // Neues Ziel ggf. automatisch in Zieleliste aufnehmen
+    // neues Ziel ggf. automatisch in Zieleliste aufnehmen
     const zielExistiert = ziele.some(item => {
         const name = (item.Z != null ? item.Z : item.z) || "";
         return name.toLowerCase() === zv.toLowerCase();
@@ -354,21 +383,28 @@ function add() {
 
     if (!zielExistiert && zv) {
         if (window.chrome && window.chrome.webview) {
-            chrome.webview.postMessage({
-                type: "saveZiel",
-                payload: { z: zv, p: bv, oldZ: null }
-            });
+            try {
+                chrome.webview.postMessage({
+                    type: "saveZiel",
+                    payload: { z: zv, p: bv, oldZ: null }
+                });
+            } catch (e) {
+                console.log("saveZiel postMessage fehlgeschlagen:", e);
+            }
         }
-        // wir fügen es auch lokal in ziele ein, damit Autovervollständigung direkt verfügbar ist
         ziele.push({ Z: zv, P: bv });
         updateZielListe();
     }
 
     if (window.chrome && window.chrome.webview) {
-        chrome.webview.postMessage({
-            type: "saveFahrt",
-            payload: { w: wv, z: zv, b: bv }
-        });
+        try {
+            chrome.webview.postMessage({
+                type: "saveFahrt",
+                payload: { w: wv, z: zv, b: bv }
+            });
+        } catch (e) {
+            console.log("saveFahrt postMessage fehlgeschlagen:", e);
+        }
     } else {
         alert("Nur in der Desktop-App speicherbar.");
     }
@@ -378,13 +414,10 @@ function add() {
     bInput.value = "";
 }
 
-
 /* ========= Render ========= */
 
 function render() {
-    const tbody = document.getElementById('tbody');
-
-    // C# liefert Properties W,U,Z,B,T (Groß); zur Sicherheit auch klein prüfen
+    // Fahrten-Tabelle
     tbody.innerHTML = [...fahrten].reverse().map(f => {
         const w = f.W != null ? f.W : f.w;
         const u = f.U != null ? f.U : f.u;
@@ -396,16 +429,16 @@ function render() {
         const betragStr = isNaN(betragNum) ? "" : betragNum.toFixed(2) + " €";
 
         return `<tr>
-            <td>${w != null ? w : ""}</td>
-            <td>${u != null ? u : ""}</td>
-            <td>${z != null ? z : ""}</td>
+            <td>${w || ""}</td>
+            <td>${u || ""}</td>
+            <td>${z || ""}</td>
             <td>${betragStr}</td>
-            <td>${t != null ? t : ""}</td>
+            <td>${t || ""}</td>
             <td></td>
         </tr>`;
     }).join("");
 
-    // Rangliste: ebenfalls auf Groß/Klein achten
+    // Rangliste
     const stats = {};
     const count = {};
 
@@ -424,7 +457,6 @@ function render() {
         stats[u] = (stats[u] || 0) + num;
     });
 
-    const ranglisteDiv = document.getElementById('rangliste');
     ranglisteDiv.innerHTML = Object.keys(count).map(u => {
         const avg = (stats[u] || 0) / count[u];
         return `<div class="rangliste-item">
@@ -432,9 +464,20 @@ function render() {
         </div>`;
     }).join("");
 }
+
+/* ========= Initialisierung bei jedem Laden ========= */
+
+document.addEventListener('DOMContentLoaded', () => {
+    // für Browser (ohne WebView) nichts tun, nur Oberfläche anzeigen
+    if (window.chrome && window.chrome.webview) {
+        registerWebViewListener();
+    }
+});
 </script>
+
 </body>
 </html>
+
 
 
 
