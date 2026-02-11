@@ -228,255 +228,156 @@ td {
 </div>
 
 <script>
-let fahrten = [];
-let fahrzeuge = [];
-let ziele = [];
+    // Passwort ist "1234" (als Base64 verschleiert)
+    const H_PW = "MTIzNA=="; 
+    let isDev = false;
+    let pendingAction = null; 
 
-/* ========= DEV ========= */
-const DEV_PW = "1234";
-let dev = false;
-let pending = null;
+    const wNrInput = document.getElementById('wNr');
+    const zielInput = document.getElementById('zielInput');
+    const betragInput = document.getElementById('betrag');
 
-function requestDev(action) {
-    if (dev) return exec(action);
-    pending = action;
-    overlay.style.display = devModal.style.display = "block";
-}
-function confirmDev() {
-    if (devPw.value === DEV_PW) {
-        dev = true;
-        overlay.style.display = devModal.style.display = "none";
-        exec(pending);
-    } else alert("Falsch");
-    devPw.value = "";
-}
-function exec(a) {
-    if (a === "clear" && confirm("Alles löschen?")) {
-        if (window.chrome && window.chrome.webview) {
-            chrome.webview.postMessage({ type: "clearAll" });
+    let fahrzeuge = JSON.parse(localStorage.getItem('wg_data') || '[]');
+    let ziele = JSON.parse(localStorage.getItem('ziele_data') || '[]');
+    let fahrten = JSON.parse(localStorage.getItem('fahrten_data') || '[]');
+
+    function requestDevAccess(actionType, index = null) {
+        if (isDev) { executeAction(actionType, index); return; }
+        pendingAction = { type: actionType, index: index };
+        document.getElementById('modalOverlay').style.display = 'block';
+        document.getElementById('devModal').style.display = 'block';
+        document.getElementById('devPwInput').focus();
+    }
+
+    function confirmDevLogin() {
+        if (btoa(document.getElementById('devPwInput').value) === H_PW) {
+            isDev = true;
+            closeDevModal();
+            executeAction(pendingAction.type, pendingAction.index);
         } else {
-            alert("Nur in der Desktop-App löschbar.");
+            alert("Zugriff verweigert!");
+        }
+        document.getElementById('devPwInput').value = "";
+    }
+
+    function closeDevModal() {
+        document.getElementById('modalOverlay').style.display = 'none';
+        document.getElementById('devModal').style.display = 'none';
+    }
+
+    function executeAction(type, index) {
+        // Da die Liste zum Rendern umgedreht wird, müssen wir den Index korrigieren
+        // Aber einfacher: Wir löschen über die eindeutige ID
+        if (type === 'delete') {
+            if (confirm("Diesen Eintrag permanent löschen?")) {
+                const realIndex = fahrten.length - 1 - index; // Korrektur wegen reverse()
+                fahrten.splice(realIndex, 1);
+                saveAndRefresh();
+            }
+        } else if (type === 'clear') {
+            if (confirm("ALLE DATEN LÖSCHEN?")) { fahrten = []; saveAndRefresh(); }
         }
     }
-}
 
-/* ========= ZIEL-DATALIST ========= */
-
-function updateZielListe() {
-    const dl = document.getElementById('zielListe');
-    if (!dl) return;
-    dl.innerHTML = ziele.map(item => {
-        const name = item.Z != null ? item.Z : item.z;
-        return `<option value="${name}"></option>`;
-    }).join('');
-}
-
-/* ========= Eingabe-Elemente ========= */
-
-const wInput = document.getElementById('w');
-const zInput = document.getElementById('z');
-const bInput = document.getElementById('b');
-const tbody  = document.getElementById('tbody');
-const ranglisteDiv = document.getElementById('rangliste');
-
-/* ========= ENTER-NAVIGATION ========= */
-
-wInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
+    window.handleAdminContext = (e, index) => {
         e.preventDefault();
-        zInput.focus();
+        requestDevAccess('delete', index);
+    };
+
+    function updateZielDatalist() {
+        const datalist = document.getElementById('zielOptionen');
+        datalist.innerHTML = ziele.map(z => `<option value="${z.z}">`).join('');
     }
-});
-zInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        bInput.focus();
-    }
-});
-bInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        add();
-    }
-});
 
-/* ========= Autopreis aus Zieleliste ========= */
-
-zInput.addEventListener('input', e => {
-    const zVal = e.target.value.trim();
-    const ziel = ziele.find(z => {
-        const name = (z.Z != null ? z.Z : z.z) || "";
-        return name.toLowerCase() === zVal.toLowerCase();
-    });
-    if (ziel) {
-        const preis = ziel.P != null ? ziel.P : ziel.p;
-        if (preis != null) {
-            bInput.value = Number(preis).toFixed(2);
-        }
-    }
-});
-
-/* ========= C# <-> JS ========= */
-
-// damit wir Handler nicht doppelt registrieren:
-let webviewListenerRegistered = false;
-
-function registerWebViewListener() {
-    if (!window.chrome || !window.chrome.webview) return;
-    if (webviewListenerRegistered) return;
-
-    window.chrome.webview.addEventListener('message', event => {
-        const msg = event.data;
-        if (!msg || !msg.type) return;
-
-        switch (msg.type) {
-            case "initData":
-                fahrzeuge = msg.payload.fahrzeuge || [];
-                fahrten   = msg.payload.fahrten   || [];
-                ziele     = msg.payload.ziele     || [];
-                updateZielListe();
-                render();
-                break;
-
-            case "fahrtenUpdated":
-                fahrten = msg.payload || [];
-                render();
-                break;
-
-            case "error":
-                alert(msg.payload || "Unbekannter Fehler");
-                break;
-        }
+    zielInput.addEventListener('input', () => {
+        const ziel = ziele.find(z => z.z === zielInput.value);
+        if (ziel) betragInput.value = ziel.p;
     });
 
-    // beim ersten Laden und auch nach Zurückkehren immer init anfordern
-    sendInitToHost();
+    wNrInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); zielInput.focus(); } });
+    zielInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); betragInput.focus(); } });
 
-    webviewListenerRegistered = true;
-}
+    document.getElementById('fahrtForm').onsubmit = (e) => {
+        e.preventDefault();
+        const w = wNrInput.value.trim();
+        const z = zielInput.value.trim();
+        const b = parseFloat(betragInput.value);
+        const mapping = fahrzeuge.find(f => f.w === w);
 
-function sendInitToHost() {
-    if (window.chrome && window.chrome.webview) {
-        try {
-            chrome.webview.postMessage({ type: "init" });
-        } catch (e) {
-            console.log("init postMessage fehlgeschlagen:", e);
-        }
-    }
-}
+        if(!mapping) { alert("Wagen " + w + " unbekannt!"); return; }
 
-/* ========= add() inkl. neues Ziel speichern ========= */
-
-function add() {
-    const wv = wInput.value.trim();
-    const zv = zInput.value.trim();
-    const bv = parseFloat(bInput.value.replace(',', '.'));
-
-    if (!wv) return alert("Wagen fehlt");
-    if (isNaN(bv)) return alert("Betrag ungültig");
-
-    // neues Ziel ggf. automatisch in Zieleliste aufnehmen
-    const zielExistiert = ziele.some(item => {
-        const name = (item.Z != null ? item.Z : item.z) || "";
-        return name.toLowerCase() === zv.toLowerCase();
-    });
-
-    if (!zielExistiert && zv) {
-        if (window.chrome && window.chrome.webview) {
-            try {
-                chrome.webview.postMessage({
-                    type: "saveZiel",
-                    payload: { z: zv, p: bv, oldZ: null }
-                });
-            } catch (e) {
-                console.log("saveZiel postMessage fehlgeschlagen:", e);
+        if (z !== "" && !ziele.some(item => item.z.toLowerCase() === z.toLowerCase())) {
+            if (confirm(`Ziel "${z}" neu speichern?`)) {
+                ziele.push({ z, p: b });
+                localStorage.setItem('ziele_data', JSON.stringify(ziele));
+                updateZielDatalist();
             }
         }
-        ziele.push({ Z: zv, P: bv });
-        updateZielListe();
-    }
 
-    if (window.chrome && window.chrome.webview) {
-        try {
-            chrome.webview.postMessage({
-                type: "saveFahrt",
-                payload: { w: wv, z: zv, b: bv }
+        fahrten.push({
+            id: Date.now(), w, u: mapping.u, z, b,
+            t: new Date().toLocaleString('de-DE'),
+            stornoDatum: "", type: "normal", isStorniert: false
+        });
+
+        saveAndRefresh();
+        wNrInput.value = ''; zielInput.value = ''; betragInput.value = '';
+        wNrInput.focus();
+    };
+
+    window.convertToStorno = (index) => {
+        const realIndex = fahrten.length - 1 - index;
+        const f = fahrten[realIndex];
+        if (f.isStorniert || f.type === "storno") return;
+        if (confirm(`Stornieren?`)) {
+            f.isStorniert = true;
+            fahrten.push({
+                id: Date.now(), w: f.w, u: f.u, z: "STORNO: " + f.z, b: -f.b,
+                t: f.t, stornoDatum: new Date().toLocaleString('de-DE'), type: "storno"
             });
-        } catch (e) {
-            console.log("saveFahrt postMessage fehlgeschlagen:", e);
+            saveAndRefresh();
         }
-    } else {
-        alert("Nur in der Desktop-App speicherbar.");
+    };
+
+    function renderFahrten() {
+        const tbody = document.querySelector('#fahrtenTable tbody');
+        // Kopie erstellen und umdrehen, damit das Original-Array für die IDs stabil bleibt
+        const displayList = [...fahrten].reverse();
+        
+        tbody.innerHTML = displayList.map((f, i) => {
+            let rowClass = f.type === "storno" ? "row-storno" : (f.isStorniert ? "row-is-storniert" : "");
+            let aktion = f.type === "storno" ? "Beleg" : (f.isStorniert ? "Storniert" : `<button class="btn-storno" onclick="convertToStorno(${i})">Storno</button>`);
+            return `<tr class="${rowClass}" oncontextmenu="handleAdminContext(event, ${i})">
+                <td><b>${f.w}</b></td><td>${f.u}</td><td>${f.z}</td><td>${f.b.toFixed(2)} €</td>
+                <td style="color:#888">${f.t}</td><td style="color:#e74c3c; font-weight:bold;">${f.stornoDatum || '-'}</td><td>${aktion}</td>
+            </tr>`;
+        }).join('');
     }
 
-    wInput.value = "";
-    zInput.value = "";
-    bInput.value = "";
-}
-
-/* ========= Render ========= */
-
-function render() {
-    // Fahrten-Tabelle
-    tbody.innerHTML = [...fahrten].reverse().map(f => {
-        const w = f.W != null ? f.W : f.w;
-        const u = f.U != null ? f.U : f.u;
-        const z = f.Z != null ? f.Z : f.z;
-        const b = f.B != null ? f.B : f.b;
-        const t = f.T != null ? f.T : f.t;
-
-        const betragNum = Number(b);
-        const betragStr = isNaN(betragNum) ? "" : betragNum.toFixed(2) + " €";
-
-        return `<tr>
-            <td>${w || ""}</td>
-            <td>${u || ""}</td>
-            <td>${z || ""}</td>
-            <td>${betragStr}</td>
-            <td>${t || ""}</td>
-            <td></td>
-        </tr>`;
-    }).join("");
-
-    // Rangliste
-    const stats = {};
-    const count = {};
-
-    fahrzeuge.forEach(f => {
-        const u = f.U != null ? f.U : f.u;
-        if (!u) return;
-        count[u] = (count[u] || 0) + 1;
-    });
-
-    fahrten.forEach(f => {
-        const u = f.U != null ? f.U : f.u;
-        const b = f.B != null ? f.B : f.b;
-        if (!u) return;
-        const num = Number(b);
-        if (isNaN(num)) return;
-        stats[u] = (stats[u] || 0) + num;
-    });
-
-    ranglisteDiv.innerHTML = Object.keys(count).map(u => {
-        const avg = (stats[u] || 0) / count[u];
-        return `<div class="rangliste-item">
-            <b>${u}</b><br>Ø ${avg.toFixed(2)} €
-        </div>`;
-    }).join("");
-}
-
-/* ========= Initialisierung bei jedem Laden ========= */
-
-document.addEventListener('DOMContentLoaded', () => {
-    // für Browser (ohne WebView) nichts tun, nur Oberfläche anzeigen
-    if (window.chrome && window.chrome.webview) {
-        registerWebViewListener();
+    function renderRangliste() {
+        const stats = {}; const counts = {};
+        fahrzeuge.forEach(f => { counts[f.u] = (counts[f.u] || 0) + 1; });
+        fahrten.forEach(f => { stats[f.u] = (stats[f.u] || 0) + f.b; });
+        const rangData = Object.keys(counts).map(u => ({ u, schnitt: (stats[u] || 0) / counts[u], wagen: counts[u] })).sort((a,b) => a.schnitt - b.schnitt);
+        document.getElementById('ranglisteBar').innerHTML = rangData.map((r, i) => `
+            <div class="rangliste-item ${i === 0 && r.schnitt !== 0 ? 'low' : ''}">
+                <b>${r.u}</b><span>Ø ${r.schnitt.toFixed(2)} € (${r.wagen} Wagen)</span>
+            </div>`).join('');
     }
-});
+
+    function saveAndRefresh() {
+        localStorage.setItem('fahrten_data', JSON.stringify(fahrten));
+        renderAll();
+    }
+
+    function renderAll() { renderFahrten(); renderRangliste(); }
+    
+    updateZielDatalist();
+    renderAll();
 </script>
-
 </body>
 </html>
+
 
 
 
